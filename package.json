@@ -62,5 +62,8 @@
 		"svelte-sonner": "^0.3.28",
 		"svelte-ux": "^0.90.0",
 		"zod": "^3.24.1"
+	},
+	"resolutions"{
+	 "svelte": "^4.2.19"
 	}
 }
