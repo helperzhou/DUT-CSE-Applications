@@ -67,7 +67,7 @@
 	 "svelte": "^4.2.19"
 	},
 	"scripts": {
-  "postinstall": "npm install --legacy-peer-deps --force"
+  "postinstall": ""
 }
 
 }
