@@ -63,7 +63,7 @@
 		"svelte-ux": "^0.90.0",
 		"zod": "^3.24.1"
 	},
-	"resolutions"{
+	"resolutions": {
 	 "svelte": "^4.2.19"
 	}
 }
