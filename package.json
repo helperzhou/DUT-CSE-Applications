@@ -65,9 +65,6 @@
 	},
 	"resolutions": {
 	 "svelte": "^4.2.19"
-	},
-	"scripts": {
-  "postinstall": ""
-}
+	}
 
 }
