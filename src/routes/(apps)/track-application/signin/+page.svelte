@@ -6,14 +6,22 @@
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
 	import { Label } from "$lib/components/ui/label/index.js";
+	import  {Icons} from "$lib/components/ui/icons/index";
+	import { writable } from 'svelte/store';
+
+	const isLoading = writable(false); // ✅ Now it's a store
 
 	// Form state
 	let email = "";
 	let password = "";
 	let errorMessage = "";
 
+
 	// Handle Login
 	const handleLogin = async () => {
+		isLoading.set(true); // ✅ Update store value
+		errorMessage = ""; // Reset error
+
 		try {
 			// 🔹 Sign in user with Firebase Authentication
 			const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -30,7 +38,7 @@
 
 				// 🔹 Redirect based on role
 				if (userRole === "admin") {
-					goto("/");
+					goto("/dashboard");
 				} else {
 					goto("/track-application/tracker");
 				}
@@ -40,6 +48,8 @@
 		} catch (error) {
 			console.error("🔥 Firebase Auth Error:", error);
 			errorMessage = error.message;
+		} finally {
+			isLoading.set(false); // ✅ Update store value
 		}
 	};
 </script>
@@ -67,8 +77,16 @@
 					<Input id="password" type="password" bind:value={password} required />
 					<a href="##" class="mr-auto inline-block text-sm underline">Forgot your password?</a>
 				</div>
-				<Button type="button" class="w-full" on:click={handleLogin}>Login</Button>
-				<Button variant="outline" class="w-full">Login with Google</Button>
+				<Button type="button" class="w-full" on:click={handleLogin} disabled={$isLoading}>
+					{#if $isLoading}
+						<Icons.spinner class="mr-2 h-4 w-4 animate-spin" />
+						Signing In...
+					{:else}
+						Login
+					{/if}
+				</Button>
+
+				<!--				<Button variant="outline" class="w-full">Login with Google</Button>-->
 			</div>
 			<div class="mt-4 text-center text-sm">
 				Don&apos;t have an account?
