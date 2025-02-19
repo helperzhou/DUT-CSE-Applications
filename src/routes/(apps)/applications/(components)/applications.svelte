@@ -8,7 +8,7 @@
 	import ListFilter from 'lucide-svelte/icons/list-filter';
 	import EllipsisVertical from 'lucide-svelte/icons/ellipsis-vertical';
 
-	import Truck from 'lucide-svelte/icons/truck';
+	import Truck from 'lucide-svelte/icons/recycle';
 
 	import { Badge } from '$lib/components/ui/badge';
 	import RecommendationModal from '$lib/components/ui/applicationOutput.svelte'
@@ -23,10 +23,12 @@
 	import { applications, fetchAllApplications } from "../(data)/applications";
 	import * as Table from '$lib/components/ui/table';
 	import * as Tabs from '$lib/components/ui/tabs';
-	let isModalOpen = false;
+	import { writable, get } from 'svelte/store';
+
+	let isModalOpen = writable(false);
 
 	let selectedFilter = "All"; // Default filter
-	let selectedApplication = {}; // Default to first application
+	let selectedApplication = writable(null); // Store selected application details
 
 	// 🔹 Fetch Applications on Load
 	onMount(async () => {
@@ -40,10 +42,40 @@
 	$: filteredApplications = $applications.filter(app =>
 		selectedFilter === "All" || app.status === selectedFilter
 	);
+	function formatDate(timestamp) {
+		if (!timestamp) return "N/A"; // Handle missing values
 
+		const date = new Date(timestamp.seconds * 1000); // Convert Firestore timestamp to JS Date
+		return date.toLocaleDateString("en-GB", {
+			day: "2-digit",
+			month: "long",
+			year: "numeric",
+		});
+	}
 	// 🔹 Select Application
 	function selectApplication(app) {
-		selectedApplication = app;
+		selectedApplication.set(app);
+		console.log("✅ Selected Application:", get(selectedApplication)?.businessName); // Debugging log
+	}
+
+	function openRecommendationModal() {
+		const app = get(selectedApplication);
+
+		if (app?.applicationID) {
+			console.log("📌 Opening Modal for Application ID:", app.applicationID);
+
+			// Ensure we reset the state before opening
+			isModalOpen.set(false);
+			setTimeout(() => isModalOpen.set(true), 10); // Small delay to allow Svelte reactivity to process the change
+		} else {
+			console.warn("⚠️ No valid application selected");
+		}
+	}
+
+
+	// 🔹 Close Modal
+	function closeModal() {
+		isModalOpen.set(false);
 	}
 
 </script>
@@ -150,7 +182,7 @@
 									</Table.Header>
 									<Table.Body>
 										{#each filteredApplications as app}
-											<Table.Row  class="{selectedApplication?.name === app.name ? 'bg-accent' : ''} cursor-pointer hover:bg-accent " on:click={() => selectApplication(app)} >
+											<Table.Row  class="{$selectedApplication?.name === app.name ? 'bg-accent' : ''} cursor-pointer hover:bg-accent " on:click={() => selectApplication(app)} >
 												<Table.Cell>
 													<div class="font-medium">{app.name}</div>
 													<div class="hidden text-sm text-muted-foreground md:inline">{app.email}</div>
@@ -167,8 +199,10 @@
 
 												<Table.Cell class="hidden sm:table-cell">{app.programName}</Table.Cell>
 												<Table.Cell>
-													<Button size="sm" variant='outline' on:click={() => (isModalOpen = true)}>Recommendation</Button>
-													<RecommendationModal isOpen={isModalOpen}/>
+													<Button size="sm" variant='outline' on:click={() => openRecommendationModal()}>Recommendation</Button>
+													<RecommendationModal
+														isOpen={$isModalOpen} application={$selectedApplication} on:close={() => isModalOpen.set(false)}
+													/>
 												</Table.Cell>
 											</Table.Row>
 										{/each}
@@ -184,7 +218,7 @@
 					<Card.Header class="flex flex-row items-start bg-muted/50">
 						<div class="grid gap-0.5">
 							<Card.Title class="group flex items-center gap-2 text-lg">
-								{selectedApplication.applicationID}
+								{$selectedApplication?.applicationID}
 								<Button
 									size="icon"
 									variant="outline"
@@ -194,29 +228,17 @@
 									<span class="sr-only">Copy Application ID</span>
 								</Button>
 							</Card.Title>
-							<Card.Description class="mb-2">Date: November 23, 2023</Card.Description>
+							<Card.Description class="mb-2">
+								Date: {formatDate($selectedApplication?.submittedAt)}
+							</Card.Description>
 						</div>
 						<div class="ml-auto flex items-center gap-1">
 							<Button size="sm" variant="outline" class="h-8 gap-1">
 								<Truck class="h-3.5 w-3.5" />
 								<span class="lg:sr-only xl:not-sr-only xl:whitespace-nowrap">
-									Track Application
+									Change Status
 								</span>
 							</Button>
-							<DropdownMenu.Root>
-								<DropdownMenu.Trigger asChild let:builder>
-									<Button builders={[builder]} size="icon" variant="outline" class="h-8 w-8">
-										<EllipsisVertical class="h-3.5 w-3.5" />
-										<span class="sr-only">More</span>
-									</Button>
-								</DropdownMenu.Trigger>
-								<DropdownMenu.Content align="end">
-									<DropdownMenu.Item>Edit</DropdownMenu.Item>
-									<DropdownMenu.Item>Export</DropdownMenu.Item>
-									<DropdownMenu.Separator />
-									<DropdownMenu.Item>Trash</DropdownMenu.Item>
-								</DropdownMenu.Content>
-							</DropdownMenu.Root>
 						</div>
 					</Card.Header>
 					<Card.Content class="p-6 text-sm">
@@ -225,27 +247,27 @@
 							<ul class="grid gap-3">
 								<li class="flex items-center justify-between">
 									<span class="text-muted-foreground"> Business Name </span>
-									<span>{selectedApplication.businessName}</span>
+									<span>{$selectedApplication?.businessName}</span>
 								</li>
 								<li class="flex items-center justify-between">
 									<span class="text-muted-foreground"> Sector </span>
-									<span>{selectedApplication.natureOfBusiness}</span>
+									<span>{$selectedApplication?.natureOfBusiness}</span>
 								</li>
 								<li class="flex items-center justify-between">
 									<span class="text-muted-foreground"> Growth Rate</span>
-									<span>{selectedApplication.growthRate}</span>
+									<span>{$selectedApplication?.growthRate}</span>
 								</li>
 								<li class="flex items-center justify-between">
 									<span class="text-muted-foreground"> Previous Year Revenue </span>
-									<span>{selectedApplication.annualTurnover}</span>
+									<span>{$selectedApplication?.annualTurnover}</span>
 								</li>
 								<li class="flex items-center justify-between">
 									<span class="text-muted-foreground"> Past Four Months Turnover </span>
-									<span>{selectedApplication.annualTurnover}</span>
+									<span>{$selectedApplication?.annualTurnover}</span>
 								</li>
 								<li class="flex items-center justify-between">
 									<span class="text-muted-foreground"> Number Of Workers</span>
-									<span>{selectedApplication.employees}</span>
+									<span>{$selectedApplication?.employees}</span>
 								</li>
 
 							</ul>
@@ -255,18 +277,18 @@
 								<dl class="grid gap-3">
 									<div class="flex items-center justify-between">
 										<dt class="text-muted-foreground">Applicant</dt>
-										<dd>{selectedApplication.name}</dd>
+										<dd>{$selectedApplication?.name}</dd>
 									</div>
 									<div class="flex items-center justify-between">
 										<dt class="text-muted-foreground">Email</dt>
 										<dd>
-											<a href="mailto:">{selectedApplication.email}</a>
+											<a href="mailto:">{$selectedApplication?.email}</a>
 										</dd>
 									</div>
 									<div class="flex items-center justify-between">
 										<dt class="text-muted-foreground">Phone</dt>
 										<dd>
-											<a href="tel:">{selectedApplication.phoneNumber}</a>
+											<a href="tel:">{$selectedApplication?.phoneNumber}</a>
 										</dd>
 									</div>
 								</dl>
@@ -276,9 +298,8 @@
 								<div class="grid gap-3">
 									<div class="font-semibold">Address Information</div>
 									<address class="grid gap-0.5 not-italic text-muted-foreground">
-										<span>{selectedApplication.name}</span>
-										<span>{selectedApplication.address}</span>
-										<span>{selectedApplication.city}</span>
+										<span>{$selectedApplication?.name}</span>
+										<span>{$selectedApplication?.businessAddress}</span>
 									</address>
 								</div>
 							</div>

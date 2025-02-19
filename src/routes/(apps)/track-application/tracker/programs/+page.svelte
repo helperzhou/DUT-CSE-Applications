@@ -297,7 +297,7 @@
 												{#if program.status === "Not Applied"}
 													<Button
 														size="sm"
-														on:click={() => goto(`/application-form?programID=${program.programID}`)}
+														on:click={() => goto(`/application-form?programID=${encodeURIComponent(program.programID)}&programName=${encodeURIComponent(program.programName)}&programCategory=${encodeURIComponent(program.programCategory)}`)}
 													>
 														Apply
 													</Button>

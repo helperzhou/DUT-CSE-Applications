@@ -103,12 +103,14 @@
 
 		// 🔹 Extract program details from URL parameters
 		const urlParams = new URLSearchParams(window.location.search);
+		const programID = urlParams.get("programID");
 		const programName = urlParams.get("programName");
 		const programCategory = urlParams.get("programCategory");
 
 		// ✅ Update form data with program details from URL
 		formData.update(data => ({
 			...data,
+			programID: programID || "",
 			programName: programName || "",
 			programCategory: programCategory || ""
 		}));
@@ -236,12 +238,29 @@
 			});
 
 			const result = await response.json();
-			console.log("✅ AI Scoring Response:", result);
+			console.log("✅ Raw AI Response:", result);
+
+			// 🔹 Check if `raw_response` exists and contains valid JSON
+			let aiEvaluation = null;
+			if (result.evaluation && result.evaluation.raw_response) {
+				try {
+					// Remove triple backticks (```) and parse the inner JSON
+					const cleanedJsonString = result.evaluation.raw_response
+						.replace(/^```json/, '')  // Remove starting ```
+						.replace(/```$/, '')       // Remove ending ```
+						.trim();                    // Trim whitespace
+
+					aiEvaluation = JSON.parse(cleanedJsonString);
+					console.log("✅ Parsed AI Evaluation:", aiEvaluation);
+				} catch (parseError) {
+					console.error("🔥 Error parsing AI evaluation JSON:", parseError);
+				}
+			}
 
 			return {
-				aiRecommendation: result.evaluation["AI Recommendation"],
-				aiScore: result.evaluation["AI Score"],
-				aiJustification: result.evaluation["Justification"],
+				aiRecommendation: aiEvaluation?.["AI Recommendation"] || "Unknown",
+				aiScore: aiEvaluation?.["AI Score"] || 0,
+				aiJustification: aiEvaluation?.["Justification"] || "No justification provided",
 			};
 		} catch (error) {
 			console.error("🔥 Error submitting to AI Screener:", error);
@@ -249,17 +268,43 @@
 		}
 	};
 
+	// Modal Visibility
+	let showModal = writable(false);
+	let modalMessage = writable("Processing your application...");
+
+	// Array of messages to show while submitting
+	const loadingMessages = [
+		"Scanning Documents...",
+		"Verifying Authenticity...",
+		"Checking Compliance...",
+		"Uploading Your Application...",
+		"Finalizing Submission..."
+	];
+
+	// Function to cycle through messages
+	let messageIndex = 0;
+	const updateModalMessage = () => {
+		modalMessage.set(loadingMessages[messageIndex % loadingMessages.length]);
+		messageIndex++;
+		setTimeout(updateModalMessage, 2000); // Change message every 2 seconds
+	};
+
 	const submitForm = async () => {
 		try {
+			showModal.set(true); // Show modal
+			updateModalMessage(); // Start cycling through messages
+
 			const user = auth.currentUser;
 			if (!user) {
 				alert("User not logged in!");
+				showModal.set(false); // Hide modal on error
 				return;
 			}
 
 			const userId = await getUserIdByEmail(user.email);
 			if (!userId) {
 				alert("User not found in Firestore!");
+				showModal.set(false);
 				return;
 			}
 
@@ -283,7 +328,8 @@
 			const aiResponse = await submitToAI(applicationData);
 
 			if (!aiResponse) {
-				alert("Failed to retrieve AI scoring. Please try again.");
+				// alert("Failed to retrieve AI scoring. Please try again.");
+				showModal.set(false);
 				return;
 			}
 
@@ -310,15 +356,16 @@
 				aiJustification: aiResponse.aiJustification,
 			});
 
-			alert(`✅ Application Submitted Successfully! AI Score: ${aiResponse.aiScore}`);
+			// alert(`✅ Application Submitted Successfully! AI Score: ${aiResponse.aiScore}`);
+			showModal.set(false); // Hide modal after submission
 			goto('/track-application/tracker');
 
 		} catch (error) {
 			console.error("🔥 Firestore Error:", error);
 			alert("Error submitting application. Please try again.");
+			showModal.set(false);
 		}
 	};
-
 
 	const fetchApplicationData = async (userId) => {
 		try {
@@ -334,6 +381,20 @@
 		}
 	};
 </script>
+<!-- ✅ MODAL FOR LOADING SCREEN -->
+{#if $showModal}
+	<div class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-50">
+		<div class="bg-accent p-6 rounded-lg shadow-lg text-center">
+			<div class="flex justify-center items-center">
+				<svg class="animate-spin h-8 w-8 text-blue-600 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+				</svg>
+				<p class="text-lg font-medium">{$modalMessage}</p>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <!-- Form Wrapper -->
 <div class="flex flex-col items-center">
@@ -379,7 +440,7 @@
 						<Input id="date-registration" type="date" bind:value={$formData.dateOfRegistration} />
 
 						<Label for="owner-dob">Number of years of trading</Label>
-						<Input id="owner-dob" type="date" bind:value={$formData.yearsOfTraining} />
+						<Input id="owner-dob" bind:value={$formData.yearsOfTraining} />
 
 						<Label for="gender">Gender</Label>
 						<Select.Root bind:value={$formData.gender}>

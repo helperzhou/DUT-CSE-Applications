@@ -16,27 +16,44 @@
 	let password = "";
 	let errorMessage = "";
 
+	const firestoreErrorMessages: Record<string, string> = {
+		"auth/invalid-email": "Invalid email address. Please check and try again.",
+		"auth/user-disabled": "This account has been disabled. Contact support.",
+		"auth/user-not-found": "No user found with this email. Please sign up first.",
+		"auth/wrong-password": "Incorrect password. Try again or reset your password.",
+		"auth/email-already-in-use": "Email is already in use. Try logging in instead.",
+		"auth/weak-password": "Password is too weak. Try a stronger one.",
+		"auth/network-request-failed": "Network error. Check your internet connection.",
+		"auth/too-many-requests": "Too many failed login attempts. Try again later.",
+		"auth/internal-error": "Unexpected error. Please try again.",
+		"permission-denied": "You don't have permission to access this data.",
+		"not-found": "Requested data was not found in the database.",
+		"deadline-exceeded": "The operation took too long to complete. Try again.",
+		"unavailable": "Firestore service is currently unavailable. Try later.",
+		"already-exists": "Record already exists in the database.",
+		"failed-precondition": "Database rules prevent this action at the moment.",
+	};
 
-	// Handle Login
+
 	const handleLogin = async () => {
-		isLoading.set(true); // ✅ Update store value
-		errorMessage = ""; // Reset error
+		isLoading.set(true);
+		errorMessage = ""; // Reset error message
 
 		try {
-			// 🔹 Sign in user with Firebase Authentication
+			// 🔹 Firebase Authentication
 			const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
 			// 🔹 Query Firestore for the user document using email
-			const usersCollection = collection(db, "Users"); // Ensure correct collection name
+			const usersCollection = collection(db, "Users");
 			const userQuery = query(usersCollection, where("userEmail", "==", email));
 			const querySnapshot = await getDocs(userQuery);
 
 			if (!querySnapshot.empty) {
-				const userDoc = querySnapshot.docs[0]; // Get the first matching document
+				const userDoc = querySnapshot.docs[0];
 				const userData = userDoc.data();
-				const userRole = userData.userRole || "user"; // Default to "user" if missing
+				const userRole = userData.userRole || "user";
 
-				// 🔹 Redirect based on role
+				// 🔹 Redirect based on user role
 				if (userRole === "admin") {
 					goto("/dashboard");
 				} else {
@@ -45,13 +62,18 @@
 			} else {
 				errorMessage = "User data not found. Contact support.";
 			}
+
 		} catch (error) {
 			console.error("🔥 Firebase Auth Error:", error);
-			errorMessage = error.message;
+
+			// 🔹 Map error codes to friendly messages
+			errorMessage = firestoreErrorMessages[error.code] || "An unknown error occurred. Please try again.";
+
 		} finally {
-			isLoading.set(false); // ✅ Update store value
+			isLoading.set(false);
 		}
 	};
+
 </script>
 
 <div class="h-screen w-full lg:grid lg:min-h-[600px] lg:grid-cols-2">
@@ -63,10 +85,6 @@
 					Enter your email below to login to your account
 				</p>
 			</div>
-			<!-- Display Error Message -->
-			{#if errorMessage}
-				<p class="text-red-500 text-sm text-center">{errorMessage}</p>
-			{/if}
 			<div class="grid gap-4">
 				<div class="grid gap-2">
 					<Label for="email">Email</Label>
@@ -77,6 +95,10 @@
 					<Input id="password" type="password" bind:value={password} required />
 					<a href="##" class="mr-auto inline-block text-sm underline">Forgot your password?</a>
 				</div>
+				<!-- Display Error Message -->
+				{#if errorMessage}
+					<p class="text-red-500 text-sm text-center">{errorMessage}</p>
+				{/if}
 				<Button type="button" class="w-full" on:click={handleLogin} disabled={$isLoading}>
 					{#if $isLoading}
 						<Icons.spinner class="mr-2 h-4 w-4 animate-spin" />
