@@ -61,7 +61,7 @@
 							<Card.Title>Applications</Card.Title>
 							<Card.Description>Recent applications to the program.</Card.Description>
 						</div>
-						<Button href="##" size="sm" class="ml-auto gap-1">
+						<Button href="/applications" size="sm" class="ml-auto gap-1">
 							View All
 							<ArrowUpRight class="h-4 w-4" />
 						</Button>
@@ -74,7 +74,7 @@
 							<Card.Title>Program Applications</Card.Title>
 							<Card.Description>Distribution of applications per program.</Card.Description>
 						</div>
-						<Button href="##" size="sm" class="ml-auto gap-1">
+						<Button href="/analytics" size="sm" class="ml-auto gap-1">
 							View All
 							<ArrowUpRight class="h-4 w-4" />
 						</Button>
