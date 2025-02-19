@@ -52,7 +52,7 @@
 			Analytics
 		</a>
 		<a
-			href="/colors"
+			href="/settings"
 			class={cn(
 				"hover:text-foreground/80 transition-colors",
 				$page.url.pathname.startsWith("/colors") ? "text-foreground" : "text-foreground/60"
