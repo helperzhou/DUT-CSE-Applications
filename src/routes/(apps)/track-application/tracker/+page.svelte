@@ -8,6 +8,7 @@
 	import Activity from 'lucide-svelte/icons/activity';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import Users from 'lucide-svelte/icons/user-check';
+	import * as Avatar from "$lib/components/ui/avatar/index.js";
 	import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import * as Card from "$lib/components/ui/card/index.js";
@@ -18,7 +19,48 @@
 	import { signOut } from "firebase/auth";
 	import { goto } from "$app/navigation";
 	import ApplicationsTable from "./(components)/applicationsTable.svelte"
+	import { get } from 'svelte/store';
+	import { writable } from 'svelte/store';
+	import { onAuthStateChanged } from "firebase/auth";
+	import { db } from "$lib/firebase";
+	import { collection, getDocs, query, where } from "firebase/firestore";
+	import { onMount } from 'svelte';
 
+	const loggedInUser = writable<{ fullName: string; email: string } | null>(null);
+
+	async function fetchUserData(email: string) {
+		try {
+			console.log("📌 Fetching Firestore data for:", email);
+			const usersRef = collection(db, "Users");
+			const q = query(usersRef, where("userEmail", "==", email));
+			const querySnapshot = await getDocs(q);
+
+			if (!querySnapshot.empty) {
+				const userData = querySnapshot.docs[0].data();
+				console.log("✅ Found user in Firestore:", userData);
+				loggedInUser.set({ fullName: userData.userFullName, email: userData.userEmail });
+				console.log("✅ Logged In User:", get(loggedInUser)?.fullName);
+			} else {
+				console.warn("⚠️ No user found in Firestore.");
+				loggedInUser.set(null);
+			}
+		} catch (error) {
+			console.error("🔥 Error fetching Firestore user data:", error);
+		}
+	}
+
+	onMount(async () => {
+		onAuthStateChanged(auth, async (user) => {
+			console.log("🔹 Auth state changed:", user);
+			if (user && user.email) {
+				console.log("✅ Authenticated user detected:", user.email);
+				await fetchUserData(user.email);
+			} else {
+				console.warn("⚠️ No authenticated user found.");
+				loggedInUser.set(null);
+			}
+		});
+	});
 	// Handle Logout
 	const handleLogout = async () => {
 		try {
@@ -28,7 +70,9 @@
 			console.error("Logout error:", error);
 		}
 	};
-
+	function getUserInitials(name?: string): string {
+		return name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "?";
+	}
 </script>
 <div class="bg-muted/40 flex min-h-screen w-full flex-col">
 	<div class="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
@@ -90,19 +134,11 @@
 			</div>
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger asChild let:builder>
-					<Button
-						builders={[builder]}
-						variant="outline"
-						size="icon"
-						class="overflow-hidden rounded-full"
-					>
-						<img
-							src="/images/placeholder-user.jpg"
-							width={36}
-							height={36}
-							alt="Avatar"
-							class="overflow-hidden rounded-full"
-						/>
+					<Button builders={[builder]} variant="ghost" class="relative h-8 w-8 rounded-full">
+						<Avatar.Root class="h-9 w-9">
+							<Avatar.Fallback>{getUserInitials($loggedInUser?.fullName || "John Doe")}</Avatar.Fallback>
+						</Avatar.Root>
+						<span class="sr-only">Toggle user menu</span>
 					</Button>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end">

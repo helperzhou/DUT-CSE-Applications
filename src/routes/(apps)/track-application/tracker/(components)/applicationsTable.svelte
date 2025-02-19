@@ -74,7 +74,6 @@
 	{#each $applications as app}
 		<div class="flex items-center">
 			<Avatar.Root class="h-9 w-9 mr-5 cursor-pointer">
-				<Avatar.Image src="/avatars/01.png" alt="Avatar" />
 				<Avatar.Fallback>{app.businessName[0]}</Avatar.Fallback>
 			</Avatar.Root>
 			<div class="grid grid-cols-4 gap-6 items-center p-2 border-b cursor-pointer hover:bg-accent">
