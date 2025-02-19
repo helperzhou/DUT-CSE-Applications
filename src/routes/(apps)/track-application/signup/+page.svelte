@@ -158,7 +158,7 @@
 			<!-- Login Link -->
 			<div class="mt-4 text-center text-sm">
 				Already have an account?
-				<a href="/signin" class="underline"> Sign in </a>
+				<a href="/" class="underline"> Sign in </a>
 			</div>
 
 			<!-- Terms & Privacy Notice -->
