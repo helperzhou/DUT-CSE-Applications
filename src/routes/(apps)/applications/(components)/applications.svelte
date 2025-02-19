@@ -6,7 +6,6 @@
 	import File from 'lucide-svelte/icons/file';
 
 	import ListFilter from 'lucide-svelte/icons/list-filter';
-	import EllipsisVertical from 'lucide-svelte/icons/ellipsis-vertical';
 
 	import Truck from 'lucide-svelte/icons/recycle';
 
@@ -16,6 +15,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as Dialog from '$lib/components/ui/dialog';
 
 	import * as Pagination from '$lib/components/ui/pagination';
 	import { Progress } from '$lib/components/ui/progress';
@@ -24,11 +24,17 @@
 	import * as Table from '$lib/components/ui/table';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { writable, get } from 'svelte/store';
+	import { collection, db, doc, getDocs, updateDoc, query,where } from "$lib/firebase"; // Firestore for updating status
+	import  {Icons} from "$lib/components/ui/icons/index";
+	const isLoading = writable(false); // ✅ Now it's a store
 
+
+	// Stores
 	let isModalOpen = writable(false);
-
-	let selectedFilter = "All"; // Default filter
-	let selectedApplication = writable(null); // Store selected application details
+	let isStatusModalOpen = writable(false);
+	let selectedFilter = "All";
+	let selectedApplication = writable(null);
+	let newStatus = writable(""); // Store for selected new status
 
 	// 🔹 Fetch Applications on Load
 	onMount(async () => {
@@ -73,11 +79,82 @@
 	}
 
 
-	// 🔹 Close Modal
-	function closeModal() {
-		isModalOpen.set(false);
+	// Open Status Change Modal
+	function openStatusModal() {
+		const app = get(selectedApplication);
+
+		if (app?.applicationStatus) {
+			newStatus.set(app.applicationStatus); // Preload current status
+
+			// 🔹 Reset modal state before opening
+			isStatusModalOpen.set(false);
+			setTimeout(() => isStatusModalOpen.set(true), 10); // 🔥 Add delay for reactivity
+		}
 	}
 
+	// Close Modals
+	function closeModal() {
+		isModalOpen.set(false);
+		isStatusModalOpen.set(false);
+	}
+
+	// Update Status in Firestore
+	async function updateApplicationStatus() {
+		isLoading.set(true);
+		const app = get(selectedApplication);
+		const updatedStatus = get(newStatus);
+
+		if (!app || !updatedStatus) {
+			console.warn("⚠️ No application or status selected!");
+			isLoading.set(false);
+			return;
+		}
+
+		try {
+			console.log(`📌 Searching for application with ID: ${app.applicationID}`);
+
+			// 🔹 Step 1: Search all Users for the application with matching applicationID
+			const usersRef = collection(db, "Users");
+			const usersSnapshot = await getDocs(usersRef);
+
+			let appDocRef = null;
+
+			for (const userDoc of usersSnapshot.docs) {
+				const applicationsRef = collection(db, `Users/${userDoc.id}/Applications`);
+				const q = query(applicationsRef, where("applicationID", "==", app.applicationID));
+				const querySnapshot = await getDocs(q);
+
+				if (!querySnapshot.empty) {
+					const appDoc = querySnapshot.docs[0]; // Get first matching document
+					appDocRef = doc(db, `Users/${userDoc.id}/Applications`, appDoc.id); // 🔥 Use the real document ID
+					console.log(`✅ Found application in user ${userDoc.id}'s collection.`);
+					break; // Exit loop once we find the application
+				}
+			}
+
+			// 🔹 Step 2: If no document found, log warning
+			if (!appDocRef) {
+				console.warn("⚠️ No document found for this application ID.");
+				isLoading.set(false);
+				return;
+			}
+
+			// 🔹 Step 3: Update the application status
+			await updateDoc(appDocRef, { applicationStatus: updatedStatus });
+			console.log(`✅ Status updated to "${updatedStatus}" for Application ID: ${app.applicationID}`);
+
+			// 🔹 Step 4: Update the local store
+			selectedApplication.set({ ...get(selectedApplication), applicationStatus: updatedStatus });
+
+			// 🔹 Step 5: Close the modal with delay to reset modal state properly
+			isStatusModalOpen.set(false);
+			setTimeout(() => isStatusModalOpen.set(false), 10);
+		} catch (error) {
+			console.error("🔥 Error updating application status:", error);
+		} finally {
+			isLoading.set(false);
+		}
+	}
 </script>
 
 <div class="flex min-h-screen w-full flex-col">
@@ -189,7 +266,13 @@
 												</Table.Cell>
 												<Table.Cell class="hidden sm:table-cell">{app.natureOfBusiness}</Table.Cell>
 												<Table.Cell class="hidden sm:table-cell">
-													<Badge class="text-xs" variant={app.applicationStatus === "Accepted" ? "secondary" : "outline"}>
+													<Badge class={`text-xs ${
+app.applicationStatus === "Accepted"
+			? "bg-blue-100 text-blue-700"
+			: app.applicationStatus === "Rejected"
+			? "bg-red-100 text-red-700"
+			: "bg-gray-100 text-gray-700"
+	}`} variant={app.applicationStatus === "Accepted" ? "secondary" : "outline"}>
 														{app.applicationStatus}
 													</Badge>
 												</Table.Cell>
@@ -233,17 +316,29 @@
 							</Card.Description>
 						</div>
 						<div class="ml-auto flex items-center gap-1">
-							<Button size="sm" variant="outline" class="h-8 gap-1">
-								<Truck class="h-3.5 w-3.5" />
-								<span class="lg:sr-only xl:not-sr-only xl:whitespace-nowrap">
-									Change Status
-								</span>
+							<Button size="sm" variant="outline" class="h-8 gap-1" on:click={openStatusModal}>
+								<Truck class="h-3.5 w-3.5" /> Change Status
 							</Button>
 						</div>
 					</Card.Header>
 					<Card.Content class="p-6 text-sm">
 						<div class="grid gap-3">
-							<div class="font-semibold">Application Details</div>
+							<div class="font-semibold">Top Interventions</div>
+							<ul class="grid gap-3">
+								{#if $selectedApplication?.interventions}
+									{#each Object.entries($selectedApplication.interventions) as [key, value]}
+										{#if Array.isArray(value) && value.length > 0}
+											<li class="flex items-center justify-between">
+												<span class="text-muted-foreground">🔹 {key}</span>
+											</li>
+										{/if}
+									{/each}
+								{:else}
+									<li class="text-muted-foreground">No interventions available.</li>
+								{/if}
+							</ul>
+							<Separator class="my-4" />
+							<div class="font-semibold">Business Details</div>
 							<ul class="grid gap-3">
 								<li class="flex items-center justify-between">
 									<span class="text-muted-foreground"> Business Name </span>
@@ -327,6 +422,31 @@
 						</Pagination.Root>
 					</Card.Footer>
 				</Card.Root>
+				<!-- Status Change Modal -->
+				<Dialog.Root open={$isStatusModalOpen} on:close={closeModal}>
+					<Dialog.Content>
+						<Dialog.Header>
+							<Dialog.Title>Change Application Status</Dialog.Title>
+						</Dialog.Header>
+
+						<div class="space-y-2">
+							<p><strong>Current Status:</strong> {$selectedApplication?.applicationStatus}</p>
+							<label for="status">Select New Status:</label>
+							<select id="status" bind:value={$newStatus} class="border rounded p-2 w-full">
+								<option value="Accepted">Accepted</option>
+								<option value="Rejected">Rejected</option>
+							</select>
+						</div>
+						<Button type="button" class="w-full" on:click={updateApplicationStatus} disabled={$isLoading}>
+							{#if $isLoading}
+								<Icons.spinner class="mr-2 h-4 w-4 animate-spin" />
+								Making Update...
+							{:else}
+								Save Change
+							{/if}
+						</Button>
+					</Dialog.Content>
+				</Dialog.Root>
 			</div>
 		</main>
 	</div>
