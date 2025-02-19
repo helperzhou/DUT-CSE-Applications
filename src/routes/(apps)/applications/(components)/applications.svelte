@@ -323,21 +323,6 @@ app.applicationStatus === "Accepted"
 					</Card.Header>
 					<Card.Content class="p-6 text-sm">
 						<div class="grid gap-3">
-							<div class="font-semibold">Top Interventions</div>
-							<ul class="grid gap-3">
-								{#if $selectedApplication?.interventions}
-									{#each Object.entries($selectedApplication.interventions) as [key, value]}
-										{#if Array.isArray(value) && value.length > 0}
-											<li class="flex items-center justify-between">
-												<span class="text-muted-foreground">🔹 {key}</span>
-											</li>
-										{/if}
-									{/each}
-								{:else}
-									<li class="text-muted-foreground">No interventions available.</li>
-								{/if}
-							</ul>
-							<Separator class="my-4" />
 							<div class="font-semibold">Business Details</div>
 							<ul class="grid gap-3">
 								<li class="flex items-center justify-between">
@@ -365,6 +350,20 @@ app.applicationStatus === "Accepted"
 									<span>{$selectedApplication?.employees}</span>
 								</li>
 
+							</ul>
+<div class="font-semibold">Top Interventions</div>
+							<ul class="grid gap-3">
+								{#if $selectedApplication?.interventions}
+									{#each Object.entries($selectedApplication.interventions) as [key, value]}
+										{#if Array.isArray(value) && value.length > 0}
+											<li class="flex items-center justify-between">
+												<span class="text-muted-foreground">🔹 {key}</span>
+											</li>
+										{/if}
+									{/each}
+								{:else}
+									<li class="text-muted-foreground">No interventions available.</li>
+								{/if}
 							</ul>
 							<Separator class="my-4" />
 							<div class="grid gap-3">
