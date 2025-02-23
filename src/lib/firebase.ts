@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc,doc, getDoc, getDocs, query, orderBy } from "firebase/firestore";
+import { getFirestore, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, orderBy, where } from "firebase/firestore";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -20,7 +20,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app); // 🔹 Add Storage Support
 
-export { db, auth, collection, doc, getDoc, getDocs, addDoc, createUserWithEmailAndPassword, signInWithEmailAndPassword, storage, ref, uploadBytes, getDownloadURL, orderBy, query, signOut, onAuthStateChanged };
+export { db, auth, collection, doc, getDoc, getDocs, updateDoc, addDoc, createUserWithEmailAndPassword, signInWithEmailAndPassword, storage, where, ref, uploadBytes, getDownloadURL, orderBy, query, signOut, onAuthStateChanged };
 
 
 
