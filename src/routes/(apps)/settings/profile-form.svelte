@@ -45,12 +45,6 @@
 <form method="POST" class="space-y-8 items-center" id="profile-form" on:submit={handleSubmit}>
 	<div>
 		<label for="username">Username</label>
-		<Input id="username" placeholder="@admin" bind:value={$username} required />
-		<p class="text-muted">This is your display name. It can be your real name or a pseudonym.</p>
-	</div>
-
-	<div>
-		<label for="username">Username</label>
 		<Input id="username" placeholder="@shadcn" bind:value={$username} required />
 		<p class="text-muted">This is your public display name. It can be your real name or a pseudonym.</p>
 	</div><div>

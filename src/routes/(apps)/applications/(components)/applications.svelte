@@ -351,20 +351,20 @@ app.applicationStatus === "Accepted"
 								</li>
 
 							</ul>
-<div class="font-semibold">Top Interventions</div>
-<ul class="grid gap-3">
-    {#if $selectedApplication?.interventions}
-        {#each Object.entries($selectedApplication.interventions) as [key, value]}
-            {#if Array.isArray(value) && value.length > 0}
-                <li class="flex items-center justify-between">
-                    <span class="text-muted-foreground">🔹 {key} ({value.length})</span>
-                </li>
-            {/if}
-        {/each}
-    {:else}
-        <li class="text-muted-foreground">No interventions available.</li>
-    {/if}
-</ul>
+							<div class="font-semibold">Top Interventions</div>
+							<ul class="grid gap-3">
+								{#if $selectedApplication?.interventions}
+									{#each Object.entries($selectedApplication.interventions) as [key, value]}
+										{#if Array.isArray(value) && value.length > 0}
+											<li class="flex items-center justify-between">
+												<span class="text-muted-foreground">🔹 {key} ({value.length})</span>
+											</li>
+										{/if}
+									{/each}
+								{:else}
+									<li class="text-muted-foreground">No interventions available.</li>
+								{/if}
+							</ul>
 
 							<Separator class="my-4" />
 							<div class="grid gap-3">

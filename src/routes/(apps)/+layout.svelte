@@ -5,7 +5,7 @@
 	import { page } from '$app/stores';
 
 	// Define routes where the header should be hidden
-	const hiddenRoutes = ['/', '/application-form', '/track-application/signin', '/track-application/signup', '/track-application/tracker', "/track-application/tracker/programs"];
+	const hiddenRoutes = ['/', '/application-form', '/signin', '/signup', '/track-application/tracker', "/track-application/tracker/programs"];
 </script>
 
 <ModeWatcher />

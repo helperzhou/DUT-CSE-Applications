@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { writable } from 'svelte/store';
+	import { get, writable } from 'svelte/store';
 	import { onMount } from "svelte";
 	import { fly } from 'svelte/transition';
 	import { page } from "$app/stores";
@@ -19,28 +19,40 @@
 
 	// Form Data Store
 	let formData = writable({
+		programID: "",
 		programName: "",
 		programCategory: "",
+		fullName: "",
+		applicantGender:"",
+		applicantAge:"",
+		applicantIDNumber:"",
+		applicantDisability:"",
+		applicantAcademicQualification: "",
+		areYouDUTStudent: "no",
+		phoneNumber: "",
 		businessName: "",
 		yearsOfTrading:"",
 		registrationNumber: "",
 		dateOfRegistration: "",
 		businessAddress: "",
-		contactPerson: "",
-		phoneNumber: "",
-		email: "",
+		businessEmail: "",
+		socialMediaWebsiteAddress:"",
+		socialMediaInstagramAddress:"",
+		socialMediaXAddress:"",
+		socialMediaFacebookAddress:"",
+		socialMediaLinkedInAddress:"",
+		socialMediaOtherAddress:"",
 		natureOfBusiness: "",
 		businessDescription: "",
 		annualTurnover: "",
 		pastFourMonthsTurnover: "",
-		employees: "",
-		growthRate: "",
+		businessNumberOfEmployees: "",
+		businessGrowthRate: "",
 		postalCode: "",
 		lastFourMonthsTurnover: "",
-		areYouDUTStudent: "no",
+		revenueFor2023:"",
+		revenueFor2024:"",
 		whereDidYouHearAboutUs: "",
-		ownerDOB: "",
-		gender: "",
 		registeredWithSARS: "yes",
 		taxCompliance: "compliant",
 		bbbbeeCertificate: "yes",
@@ -64,6 +76,8 @@
 		{ value: 'yes', label: 'Yes' },
 		{ value: 'no', label: 'No' }
 	];
+
+	const softwareAreas = ["Financial Management", "Human Resources", "Marketing", "Risk Management", "Other"]
 	const sections = {
 		"Marketing and Sales": [
 			"Website Development & Domain Email Registration", "Website Hosting", "Logo",
@@ -151,21 +165,47 @@
 
 	// Steps for Navigation
 	const steps = [
-		{ id: 0, name: 'Business Information' },
-		{ id: 1, name: 'Business Overview' },
-		{ id: 2, name: 'Compliance & Certification' },
+		{ id: 0, name: 'Personal Details' },
+		{ id: 1, name: 'Business Information' },
+		{ id: 2, name: 'Financial & Resource Information' },
 		{ id: 3, name: 'Motivation & Challenges' },
-		{ id: 4, name: 'Review & Submit' }
+		{ id: 4, name: 'Compliance & Certification' }
 	];
 
-	// Navigation Functions
-	function nextStep() {
-		currentStep.update((step) => Math.min(step + 1, steps.length - 1));
-	}
 
-	function prevStep() {
-		currentStep.update((step) => Math.max(step - 1, 0));
-	}
+	$: selectedGender = $formData.applicantGender
+		? {
+			label: $formData.applicantGender,
+			value: $formData.applicantGender
+		}
+		: undefined;
+	$: selectedDisability = $formData.applicantDisability
+		? {
+			label: $formData.applicantDisability,
+			value: $formData.applicantDisability
+		}
+		: undefined;
+	$: selectedAcademicQualification = $formData.applicantAcademicQualification
+		? {
+			label: $formData.applicantAcademicQualification,
+			value: $formData.applicantAcademicQualification
+		}
+		: undefined;
+
+	$: selectedAreYouDUTStudent = $formData.areYouDUTStudent
+		? {
+			label: $formData.areYouDUTStudent,
+			value: $formData.areYouDUTStudent
+		}
+		: undefined;
+
+	$: selectedRegisteredWithSARS = $formData.registeredWithSARS
+		? {
+			label: $formData.registeredWithSARS,
+			value: $formData.registeredWithSARS
+		}
+		: undefined;
+
 	// File Input Binding
 	let selectedFiles = [];
 
@@ -280,7 +320,53 @@
 		"Uploading Your Application...",
 		"Finalizing Submission..."
 	];
+	const requiredFields = {
+		0: ["fullName", "applicantGender", "applicantIDNumber", "applicantAge", "applicantAcademicQualification", "areYouDUTStudent"],
+		1: ["businessName", "natureOfBusiness", "businessDescription", "yearsOfTrading", "registrationNumber", "dateOfRegistration", "businessAddress", "postalCode"],
+		2: ["revenueFor2023", "revenueFor2024", "pastFourMonthsTurnover", "businessNumberOfEmployees", "businessGrowthRate", "registeredWithSARS"],
+		3: ["motivation"],
+		4: ["documents"] // Ensure at least one document is uploaded
+	};
 
+	// Navigation Functions
+	function validateStep() {
+		const stepFields = requiredFields[get(currentStep)];
+		if (!stepFields) return true; // No required fields for this step
+
+		const formValues = get(formData);
+		let isValid = true;
+		let missingFields = [];
+
+		stepFields.forEach((field) => {
+			const value = formValues[field];
+
+			if (
+				value === undefined || // Undefined value
+				value === null || // Null value
+				(typeof value === "string" && value.trim() === "") || // Empty string
+				(typeof value === "number" && isNaN(value)) || // NaN check
+				(Array.isArray(value) && value.length === 0) // Empty array (for checkboxes)
+			) {
+				isValid = false;
+				missingFields.push(field);
+			}
+		});
+
+		if (!isValid) {
+			alert(`❌ Please fill in the required fields: ${missingFields.join(", ")}`);
+		}
+
+		return isValid;
+	}
+
+	function nextStep() {
+		if (!validateStep()) return; // Prevent moving to next step if validation fails
+
+		currentStep.update((step) => Math.min(step + 1, steps.length - 1));
+	}
+	function prevStep() {
+		currentStep.update((step) => Math.max(step - 1, 0));
+	}
 	// Function to cycle through messages
 	let messageIndex = 0;
 	const updateModalMessage = () => {
@@ -298,6 +384,11 @@
 			if (!user) {
 				alert("User not logged in!");
 				showModal.set(false); // Hide modal on error
+				return;
+			}
+
+			if (get(currentStep) === 4 && get(formData).documents.length === 0) {
+				alert("❌ Please upload at least one document before submitting.");
 				return;
 			}
 
@@ -403,67 +494,120 @@
 	</Card.Header>
 
 	<!-- Step Container -->
-	<div class="mx-auto h-[500px] w-[1200px] rounded-lg p-6 shadow-md">
+	<div class="mx-auto h-[500px] w-[1200px] rounded-lg p-6 shadow-md mb-2">
 		{#if $currentStep === 0}
 			<div transition:fly={{ y: 20, opacity: 0 }} class="w-full">
 				<Card.Root>
 					<Card.Header>
-						<Card.Title class="text-lg font-medium">Step 1: Business Information</Card.Title>
-						<Card.Description>Provide essential details about your business.</Card.Description>
+						<Card.Title class="text-lg font-medium">Step 1: Personal Details</Card.Title>
+						<Card.Description>Provide some details about yourself.</Card.Description>
 					</Card.Header>
 					<Card.Content class="grid gap-6">
-						<Label for="business-name">Business Name</Label>
+						<Label for="full-name">Full Name</Label>
 						<Input
-							id="business-name"
-							bind:value={$formData.businessName}
-							placeholder="Enter your business name"
+							id="full-name"
+							bind:value={$formData.fullName}
+							placeholder="Enter your full name"
 						/>
-						<Label for="registration-number">Registration Number</Label>
+						<Label for="applicant-id-number">ID Number</Label>
 						<Input
-							id="registration-number"
-							bind:value={$formData.registrationNumber}
-							placeholder="Enter registration number"
+							id="applicant-id-number"
+							bind:value={$formData.applicantIDNumber}
+							placeholder="Enter your ID number"
 						/>
-						<Label for="business-name">Business Address</Label>
-						<Input
-							id="business-name"
-							bind:value={$formData.businessAddress}
-							placeholder="Enter your business address"
-						/>
-						<Label for="business-name">Postal Code</Label>
-						<Input
-							id="business-name"
-							bind:value={$formData.postalCode}
-							placeholder="Enter your business address"
-						/>
-						<Label for="date-registration">Date of Registration</Label>
-						<Input id="date-registration" type="date" bind:value={$formData.dateOfRegistration} />
-
-						<Label for="owner-dob">Number of years of trading</Label>
-						<Input id="owner-dob" bind:value={$formData.yearsOfTraining} />
-
-						<Label for="gender">Gender</Label>
-						<Select.Root bind:value={$formData.gender}>
+						<Label for="gender">Select Gender</Label>
+						<Select.Root
+							selected={selectedGender}
+							onSelectedChange={(v) => {
+								if (v) {
+									$formData.applicantGender = v.value;
+								}
+							}}
+						>
 							<Select.Trigger id="gender">
 								<Select.Value placeholder="Select Gender" />
 							</Select.Trigger>
 							<Select.Content>
 								<Select.Item value="male">Male</Select.Item>
 								<Select.Item value="female">Female</Select.Item>
-								<Select.Item value="other">Other</Select.Item>
 							</Select.Content>
 						</Select.Root>
-						<Label for="owner-dob">Age of Owner (DOB)</Label>
-						<Input id="owner-dob" type="date" bind:value={$formData.ownerDOB} />
+						<input hidden bind:value={$formData.applicantGender} name="applicantGender" />
 
 
-						<Label for="business-certificate">Upload Business Registration Certificate</Label>
-						<Input
-							id="business-certificate"
-							type="file"
-							accept=".pdf,.doc,.docx,.jpg,.png"
-							on:change={handleFileSelection}
-						/>
+						<Label for="owner-age">Age</Label>
+						<Input id="owner-age" type="number" bind:value={$formData.applicantAge} placeholder="Enter Your Age"/>
+
+						<Label for="gender">Do You Have Any Disability</Label>
+						<Select.Root
+							selected={selectedDisability}
+							onSelectedChange={(v) => {
+								if (v) {
+									$formData.applicantDisability = v.value;
+								}
+							}}
+						>
+							<Select.Trigger id="disability">
+								<Select.Value placeholder="Select Response" />
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Item value="yes">Yes</Select.Item>
+								<Select.Item value="no">No</Select.Item>
+							</Select.Content>
+						</Select.Root>
+						<input hidden bind:value={$formData.applicantDisability} name="applicantDisability" />
+
+						<Label for="academic-qualification">Academic Qualification</Label>
+
+						<Select.Root
+							selected={selectedAcademicQualification}
+							onSelectedChange={(v) => {
+    if (v) {
+      $formData.applicantAcademicQualification = v.value;
+    }
+  }}
+						>
+							<Select.Trigger id="academic-qualification">
+								<Select.Value placeholder="Select Response" />
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Item value="below-metric">Below Metric</Select.Item>
+								<Select.Item value="metric">Metric</Select.Item>
+								<Select.Item value="under-graduate">
+									Under Graduate (Certificate, Diploma, Bachelors etc)
+								</Select.Item>
+								<Select.Item value="post-graduate">
+									Post Graduate (Honors, Post Graduate Diploma etc)
+								</Select.Item>
+								<Select.Item value="master">Masters</Select.Item>
+								<Select.Item value="phd">PhD</Select.Item>
+							</Select.Content>
+						</Select.Root>
+
+						<input hidden bind:value={$formData.applicantAcademicQualification} name="applicantAcademicQualification" />
+
+
+						<Label for="dut-student">Are You A DUT Student</Label>
+
+						<Select.Root
+							selected={selectedAreYouDUTStudent}
+							onSelectedChange={(v) => {
+    if (v) {
+      $formData.areYouDUTStudent = v.value;
+    }
+  }}
+						>
+							<Select.Trigger id="dut-student">
+								<Select.Value placeholder="Select Response" />
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Item value="yes">Yes</Select.Item>
+								<Select.Item value="no">No</Select.Item>
+							</Select.Content>
+						</Select.Root>
+
+						<input hidden bind:value={$formData.areYouDUTStudent} name="areYouDUTStudent" />
+
 					</Card.Content>
 					<Card.Footer class="flex justify-end">
 						<Button on:click={nextStep}>Next →</Button>
@@ -479,33 +623,115 @@
 						<Card.Title class="text-lg font-medium">Step 2: Business Overview</Card.Title>
 						<Card.Description>Describe your business operations and activities.</Card.Description>
 					</Card.Header>
+
 					<Card.Content class="grid gap-6">
+						<Label for="business-name">Business Name</Label>
+						<Input
+							id="business-name"
+							bind:value={$formData.businessName}
+							placeholder="Enter your business name"
+						/>
 						<Label for="nature-business">Nature of Business</Label>
 						<Input
 							id="nature-business"
 							bind:value={$formData.natureOfBusiness}
 							placeholder="Industry/Type of Services"
 						/>
-
 						<Label for="business-description">Briefly describe your business</Label>
 						<Textarea
 							id="business-description"
 							bind:value={$formData.businessDescription}
 							placeholder="Describe your business"
 						/>
-						<Label for="dut-student">Are you a DUT Student?</Label>
-						<Select.Root bind:value={$formData.areYouDUTStudent}>
-							<Select.Trigger id="dut-student">
-								<Select.Value placeholder="Select" />
-							</Select.Trigger>
-							<Select.Content>
-								<Select.Item value="yes">Yes</Select.Item>
-								<Select.Item value="no">No</Select.Item>
-							</Select.Content>
-						</Select.Root>
+						<Label for="years-of-trading">Number of years of trading</Label>
+						<Input id="years-of-trading" type="number" bind:value={$formData.yearsOfTrading} />
 
-						<Label for="hear-about-us">Where did you hear about us?</Label>
-						<Input id="hear-about-us" bind:value={$formData.whereDidYouHearAboutUs} placeholder="e.g., Social Media, Website, Word of Mouth" />
+						<Label for="registration-number">Registration Number</Label>
+						<Input
+							id="registration-number"
+							bind:value={$formData.registrationNumber}
+							placeholder="Enter registration number"
+						/>
+						<Label for="date-registration">Date of Registration</Label>
+						<Input id="date-registration" type="date" bind:value={$formData.dateOfRegistration} />
+
+
+
+						<Label for="business-name">Business Address</Label>
+						<Input
+							id="business-name"
+							bind:value={$formData.businessAddress}
+							placeholder="Enter your business address"
+						/>
+						<Label for="business-name">Postal Code</Label>
+						<Input
+							id="business-name"
+							bind:value={$formData.postalCode}
+							placeholder="Enter your business address"
+						/>
+
+						<Card.Root class="mx-auto w-[950px]">
+							<Card.Header>
+								<Card.Title class="text-lg font-small text-center">Website And Business Social Media Links</Card.Title>
+							</Card.Header>
+							<Card.Content>
+								<div class="flex flex-row justify-between my-4">
+									<Label for="website-address">Website Address</Label>
+									<Input
+										id="website-address"
+										bind:value={$formData.socialMediaWebsiteAddress}
+										placeholder="Enter your business website address"
+										class="w-[350px]"
+									/>
+								</div>
+								<div class="flex flex-row justify-between my-4">
+									<Label for="social-media-x-address">X (Formerly Twitter) Address</Label>
+									<Input
+										id="social-media-x-address"
+										bind:value={$formData.socialMediaXAddress}
+										placeholder="Enter your business X (Formerly Twitter) address"
+											class="w-[350px]"
+									/>
+								</div>
+								<div class="flex flex-row justify-between my-4">
+									<Label for="social-media-instagram-address">Instagram Address</Label>
+									<Input
+										id="social-media-instagram-address"
+										bind:value={$formData.socialMediaInstagramAddress}
+										placeholder="Enter your business Instagram address"
+											class="w-[350px]"
+									/>
+								</div>
+								<div class="flex flex-row justify-between my-4">
+									<Label for="social-media-facebook-address">Facebook Address</Label>
+									<Input
+										id="social-media-facebook-address"
+										bind:value={$formData.socialMediaFacebookAddress}
+										placeholder="Enter your business Facebook address"
+											class="w-[350px]"
+									/>
+								</div>
+								<div class="flex flex-row justify-between my-4">
+									<Label for="social-media-linkedin-address">LinkedIn</Label>
+									<Input
+										id="social-media-linkedin-address"
+										bind:value={$formData.socialMediaLinkedInAddress}
+										placeholder="Enter your business LinkedIn address"
+											class="w-[350px]"
+									/>
+								</div>
+								<div class="flex flex-row justify-between my-4">
+									<Label for="social-media-other">Other</Label>
+									<Input
+										id="social-media-other"
+										bind:value={$formData.socialMediaOtherAddress}
+										placeholder="Enter any other platform link"
+											class="w-[350px]"
+									/>
+								</div>
+							</Card.Content>
+						</Card.Root>
+
 					</Card.Content>
 					<Card.Footer class="flex justify-between">
 						<Button variant="ghost" on:click={prevStep}>← Back</Button>
@@ -519,11 +745,49 @@
 			<div transition:fly={{ y: 20, opacity: 0 }} class="w-full">
 				<Card.Root>
 					<Card.Header>
-						<Card.Title class="text-lg font-medium">Step 3: Compliance & Certification</Card.Title>
+						<Card.Title class="text-lg font-medium">Step 3: Finance & Performance</Card.Title>
 					</Card.Header>
 					<Card.Content class="grid gap-6">
+						<Label for="revenue-for-2023">Turnover For 2023</Label>
+						<Input
+							id="revenue-for-2023"
+							bind:value={$formData.revenueFor2023}
+							placeholder="Enter your turnover for the year 2023"
+						/>
+						<Label for="revenue-for-2024">Turnover For 2024</Label>
+						<Input
+							id="revenue-for-2024"
+							bind:value={$formData.revenueFor2024}
+							placeholder="Enter your turnover for the year 2024"
+						/>
+						<Label for="revenue-for-past-four-months">Revenue For The Past Four Months Revenue</Label>
+						<Input
+							id="revenue-for-past-four-months"
+							bind:value={$formData.pastFourMonthsTurnover}
+							placeholder="Enter your revenue for the previous four months"
+						/>
+						<Label for="number-of-employees">Number Of Employees</Label>
+						<Input
+							id="number-of-employees"
+							bind:value={$formData.businessNumberOfEmployees}
+							placeholder="Enter your revenue for the year 2024"
+						/>
+						<Label for="business-growth-rate">Business Growth Rate</Label>
+						<Input
+							id="business-growth-rate"
+							bind:value={$formData.businessGrowthRate}
+							placeholder="Enter your growth rate"
+						/>
 						<Label for="sars-registration">Registered with SARS?</Label>
-						<Select.Root bind:value={$formData.registeredWithSARS}>
+
+						<Select.Root
+							selected={selectedRegisteredWithSARS}
+							onSelectedChange={(v) => {
+    if (v) {
+      $formData.registeredWithSARS = v.value;
+    }
+  }}
+						>
 							<Select.Trigger id="sars-registration">
 								<Select.Value placeholder="Select" />
 							</Select.Trigger>
@@ -533,8 +797,9 @@
 								{/each}
 							</Select.Content>
 						</Select.Root>
-						<Label for="tax-clearance">Upload Tax Clearance Certificate</Label>
-						<Input id="tax-clearance" type="file" accept=".pdf,.doc,.docx,.jpg,.png" on:change={handleFileSelection}  />
+
+						<input hidden bind:value={$formData.registeredWithSARS} name="registeredWithSARS" />
+
 					</Card.Content>
 					<Card.Footer class="flex justify-between">
 						<Button variant="ghost" on:click={prevStep}>← Back</Button>
@@ -603,7 +868,33 @@
 							{/each}
 						</Accordion.Root>
 					</Card.Content>
-
+					<Card.Content class="grid gap-6">
+						<Label for="intervention-selection">Does Your Business Currently Have Any Form Of System In Use?</Label>
+						<Accordion.Root type="multiple">
+							{#each softwareAreas as area}
+								<Accordion.Item value={area}>
+									<!-- Click to expand -->
+									<Accordion.Trigger>
+										<div class="flex justify-between items-center w-full px-4 py-2 rounded-md cursor-pointer">
+											<span class="font-semibold">{area}</span>
+										</div>
+									</Accordion.Trigger>
+									<!-- Show checkboxes when clicked -->
+									<Accordion.Content class="px-4 py-2 rounded-md">
+										<div class="grid grid-cols-2 gap-4">
+											<div>
+													<div class="flex items-center gap-2 mb-2">
+														<Checkbox
+														/>
+														<Label>Yes</Label>
+													</div>
+											</div>
+										</div>
+									</Accordion.Content>
+								</Accordion.Item>
+							{/each}
+						</Accordion.Root>
+					</Card.Content>
 					<Card.Footer class="flex justify-between">
 						<Button variant="ghost" on:click={prevStep}>← Back</Button>
 						<Button on:click={nextStep}>Next →</Button>
@@ -622,6 +913,13 @@
 						>
 					</Card.Header>
 					<Card.Content class="grid gap-6">
+						<Label for="cipc-upload">Upload CIPC</Label>
+						<Input
+							id="cipc-upload"
+							type="file"
+							accept=".pdf,.doc,.docx,.jpg,.png"
+							on:change={handleFileSelection}
+						/>
 						<Label for="bbbbee-certificate">Upload BBBEE Certificate</Label>
 						<Input
 							id="bbbbee-certificate"
@@ -629,9 +927,28 @@
 							accept=".pdf,.doc,.docx,.jpg,.png"
 							on:change={handleFileSelection}
 						/>
-
-						<Label for="additional-docs">Upload Any Other Relevant Documents</Label>
-						<Input id="additional-docs" type="file" accept=".pdf,.doc,.docx,.jpg,.png" multiple on:change={handleFileSelection} />
+						<Label for="company-profile-upload">Upload Company Profile</Label>
+						<Input
+							id="company-profile-upload"
+							type="file"
+							accept=".pdf,.doc,.docx,.jpg,.png"
+							on:change={handleFileSelection}
+						/>
+						<Label for="id-copy">Upload Certified Copy Of ID</Label>
+						<Input
+							id="id-copy"
+							type="file"
+							accept=".pdf,.doc,.docx,.jpg,.png"
+							on:change={handleFileSelection}
+						/>
+						<Label for="bank-statement-upload">Upload Business Bank Statement (last 3 months)
+						</Label>
+						<Input
+							id="bank-statement-upload"
+							type="file"
+							accept=".pdf,.doc,.docx,.jpg,.png"
+							on:change={handleFileSelection}
+						/>
 					</Card.Content>
 					<Card.Footer class="flex justify-between">
 						<Button variant="ghost" on:click={prevStep}>← Back</Button>

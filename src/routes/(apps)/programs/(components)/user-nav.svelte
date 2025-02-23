@@ -23,6 +23,7 @@
 	$: reactiveUser = loggedInUser;
 
 	console.log("✅ Reactive User in UserNav:", get(reactiveUser));
+
 </script>
 
 <DropdownMenu.Root>
