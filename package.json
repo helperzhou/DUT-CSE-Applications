@@ -5,8 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "svelte-kit build",
-		"preview": "svelte-kit preview",
+		"build": "vite build",
+		"preview": "vite preview",
 		"deploy": "svelte-kit build && az webapp up --runtime 'NODE|18-lts' --name <DUT-CSERI-Rapid-Incubation-Program> --resource-group <DUT-CSERI-Rapid-Incubation-Program>",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
