@@ -176,19 +176,16 @@
 					url(https://images.unsplash.com/photo-1590069261209-f8e9b8642343?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1376&q=80);"
 		></div>
 		<div class="relative flex items-center text-lg font-medium">
-			<div class="absolute left-0 top-1/2 -translate-y-1/2 opacity-1">
-				<img src="/dut.png" alt="DUT Icon" class="h-16 w-16 rounded-full object-cover">
-			</div>
 			<!-- ✅ Icon Positioned Absolutely Behind Text -->
-			<div class="absolute left-14 top-1/2 -translate-y-1/2 opacity-1">
-				<img src="/dut-cse.png" alt="CSE Icon" class="h-16 w-16 rounded-full object-cover">
+			<div class="absolute left-4 top-1/2 -translate-y-1/2 opacity-1">
+				<img src="/dut-cseri.png" alt="CSE Icon" class="h-16 w-26 object-cover">
 			</div>
 			<!-- ✅ Text with Higher z-index -->
-			<span class="relative z-10 ml-40">DUT | CSE Rapid Incubation Program</span>
+			<span class="relative z-10 ml-60">DUT | CSE Rapid Incubation Program</span>
 		</div>
 
 		<div class="absolute right-2 bottom-2 -translate-y-1/2 z-20">
-			<img src="/quantIcon.png" alt="User Avatar" class="h-20 w-20 object-contain opacity-1">
+			<img src="/quantIcon.png" alt="User Avatar" class="h-16 w-26 rounded-sm object-contain opacity-1">
 		</div>
 
 	</div>

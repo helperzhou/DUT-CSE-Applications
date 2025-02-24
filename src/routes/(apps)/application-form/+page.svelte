@@ -72,10 +72,11 @@
 	});
 
 
-	const participationOptions = [
-		{ value: 'yes', label: 'Yes' },
-		{ value: 'no', label: 'No' }
-	];
+	const minWordCount = {
+		businessDescription: 200,
+		motivation: 200,
+		challenges: 200,
+	};
 
 	const softwareAreas = ["Financial Management", "Human Resources", "Marketing", "Risk Management", "Other"]
 	const sections = {
@@ -329,6 +330,10 @@
 	};
 
 	// Navigation Functions
+	function countWords(text: string) {
+		return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+	}
+
 	function validateStep() {
 		const stepFields = requiredFields[get(currentStep)];
 		if (!stepFields) return true; // No required fields for this step
@@ -336,6 +341,7 @@
 		const formValues = get(formData);
 		let isValid = true;
 		let missingFields = [];
+		let wordCountErrors = [];
 
 		stepFields.forEach((field) => {
 			const value = formValues[field];
@@ -350,10 +356,26 @@
 				isValid = false;
 				missingFields.push(field);
 			}
+
+			// ✅ Check word count if the field is in minWordCount
+			if (minWordCount[field] && typeof value === "string") {
+				const wordCount = countWords(value);
+				if (wordCount < minWordCount[field]) {
+					isValid = false;
+					wordCountErrors.push(`${field} must be at least ${minWordCount[field]} words (currently ${wordCount} words)`);
+				}
+			}
 		});
 
 		if (!isValid) {
-			alert(`❌ Please fill in the required fields: ${missingFields.join(", ")}`);
+			let errorMessage = "";
+			if (missingFields.length > 0) {
+				errorMessage += `❌ Please fill in the required fields: ${missingFields.join(", ")}.\n`;
+			}
+			if (wordCountErrors.length > 0) {
+				errorMessage += `⚠️ Word count issues:\n${wordCountErrors.join("\n")}`;
+			}
+			alert(errorMessage);
 		}
 
 		return isValid;
@@ -637,12 +659,14 @@
 							bind:value={$formData.natureOfBusiness}
 							placeholder="Industry/Type of Services"
 						/>
-						<Label for="business-description">Briefly describe your business</Label>
+						<Label for="business-description">Briefly describe your business (Min: 200 words)</Label>
 						<Textarea
 							id="business-description"
 							bind:value={$formData.businessDescription}
 							placeholder="Describe your business"
+							on:input={() => minWordCount.businessDescription = countWords($formData.businessDescription)}
 						/>
+						<p class="word-count">Word count: {minWordCount.businessDescription} / 200</p>
 						<Label for="years-of-trading">Number of years of trading</Label>
 						<Input id="years-of-trading" type="number" bind:value={$formData.yearsOfTrading} />
 
@@ -816,12 +840,14 @@
 						<Card.Title class="text-lg font-medium">Step 4: Motivation & Challenges</Card.Title>
 					</Card.Header>
 					<Card.Content class="grid gap-6">
-						<Label for="motivation">Why do you want to join?</Label>
+						<Label for="motivation">Why do you want to join? (Min: 200 words)</Label>
 						<Textarea
 							id="motivation"
 							bind:value={$formData.motivation}
 							placeholder="Explain your motivation"
+							on:input={() => minWordCount.motivation = countWords($formData.motivation)}
 						/>
+						<p class="word-count">Word count: {minWordCount.motivation} / 200</p>
 					</Card.Content>
 					<Card.Content class="grid gap-6">
 						<Label for="intervention-selection">What form of intervention do you need?</Label>
@@ -961,3 +987,14 @@
 		{/if}
 	</div>
 </div>
+
+<style>
+    .word-count {
+        font-size: 0.9rem;
+        color: gray;
+        margin-top: 4px;
+    }
+    .word-count.warning {
+        color: red;
+    }
+</style>
