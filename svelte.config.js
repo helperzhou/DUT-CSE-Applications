@@ -1,21 +1,24 @@
-import adapter from '@sveltejs/adapter-azure';
+import adapter from '@sveltejs/adapter-node';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
+	// Consult https://svelte.dev/docs/kit/integrations
+	// for more information about preprocessors
 	preprocess: vitePreprocess(),
 
 	kit: {
-		alias: {
+		// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
+		// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
+		// See https://svelte.dev/docs/kit/adapters for more information about adapters.
+        alias: {
             "@/*": "./path/to/lib/*",
         },
 		adapter: adapter(),
-		// Ensure the correct port is used
-		// Azure sets the PORT dynamically, so we respect that
 		vite: {
 			server: {
-				port: process.env.PORT || 3000, // Default to 3000 if no PORT is set
-				host: '0.0.0.0', // Required for Azure compatibility
+				port: process.env.PORT || 3000, // Azure dynamically assigns a port
+				host: '0.0.0.0' // Ensure it's accessible from outside
 			}
 		}
 	}
