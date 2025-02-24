@@ -4,7 +4,6 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"preinstall": "npm install --legacy-peer-deps || npm install --force",
 		"dev": "vite dev",
 		"build": "svelte-kit build",
 		"preview": "svelte-kit preview",
