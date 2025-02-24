@@ -14,13 +14,7 @@ const config = {
         alias: {
             "@/*": "./path/to/lib/*",
         },
-		adapter: adapter(),
-		vite: {
-			server: {
-				port: process.env.PORT || 3000, // Azure dynamically assigns a port
-				host: '0.0.0.0' // Ensure it's accessible from outside
-			}
-		}
+		adapter: adapter()
 	}
 };
 
