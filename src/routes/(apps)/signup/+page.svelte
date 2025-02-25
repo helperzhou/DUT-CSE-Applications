@@ -30,33 +30,46 @@
 	let password = "";
 
 	// 🔹 Handle User Signup
-	const handleSignup = async () => {
-		isLoading.set(true);
-		errorMessage.set("");
+	const adminEmails = [
+    "helperzhou@gmail.com",
+    "solomonn@dut.ac.za",
+    "brightnessn@dut.ac.za",
+    "snelisiweh@dut.ac.za"
+];
 
-		try {
-			// ✅ Create User in Firebase Authentication
-			const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-			const user = userCredential.user;
+const handleSignup = async () => {
+    isLoading.set(true);
+    errorMessage.set("");
 
-			// ✅ Save User Details in Firestore
-			const usersCollection = collection(db, "Users");
-			await addDoc(usersCollection, {
-				userEmail: email,
-				userFullName: `${firstName} ${lastName}`,
-				userRole: "user", // Default user role
-				createdAt: new Date(),
-			});
+    try {
+        // ✅ Create User in Firebase Authentication
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-			console.log("✅ User registered successfully:", user.email);
+        // ✅ Check if the email is in the admin list
+        const isAdmin = adminEmails.includes(email.toLowerCase());
 
-		} catch (error) {
-			console.error("🔥 Firebase Auth Error:", error);
-			errorMessage.set("An unknown error occurred. Please try again.");
-		} finally {
-			isLoading.set(false);
-		}
-	};
+        // ✅ Save User Details in Firestore with role (admin/user)
+        const usersCollection = collection(db, "Users");
+        await addDoc(usersCollection, {
+            userEmail: email,
+            userFullName: `${firstName} ${lastName}`,
+            userRole: isAdmin ? "admin" : "user", // Assign role based on email
+            createdAt: new Date(),
+        });
+
+        console.log(`✅ User registered successfully: ${user.email} | Role: ${isAdmin ? "Admin" : "User"}`);
+
+        // ✅ Redirect after successful registration
+        goto("/dashboard"); 
+
+    } catch (error) {
+        console.error("🔥 Firebase Auth Error:", error);
+        errorMessage.set("An unknown error occurred. Please try again.");
+    } finally {
+        isLoading.set(false);
+    }
+};
 </script>
 
 <div class="container relative hidden h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0" transition:slide="{{ x: isSliding ? -500 : 0 }}">
@@ -94,11 +107,11 @@
 				<div class="grid grid-cols-2 gap-4">
 					<div class="grid gap-2">
 						<Label for="first-name">First name</Label>
-						<Input id="first-name" bind:value={firstName} placeholder="Max" required />
+						<Input id="first-name" bind:value={firstName} placeholder="John" required />
 					</div>
 					<div class="grid gap-2">
 						<Label for="last-name">Last name</Label>
-						<Input id="last-name" bind:value={lastName} placeholder="Robinson" required />
+						<Input id="last-name" bind:value={lastName} placeholder="Doe" required />
 					</div>
 				</div>
 				<div class="grid gap-2">
