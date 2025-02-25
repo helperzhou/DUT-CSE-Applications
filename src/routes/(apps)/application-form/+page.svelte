@@ -22,13 +22,15 @@
 		programID: "",
 		programName: "",
 		programCategory: "",
+		firstName: "",
+		lastName:"",
 		fullName: "",
 		applicantGender:"",
 		applicantAge:"",
 		applicantIDNumber:"",
 		applicantDisability:"",
 		applicantAcademicQualification: "",
-		areYouDUTStudent: "no",
+		areYouDUTStudent: "",
 		phoneNumber: "",
 		businessName: "",
 		yearsOfTrading:"",
@@ -50,12 +52,24 @@
 		businessGrowthRate: "",
 		postalCode: "",
 		lastFourMonthsTurnover: "",
+		revenueFor2022:"",
 		revenueFor2023:"",
 		revenueFor2024:"",
+		employeesFor2022:"",
+		employeesFor2023:"",
+		employeesFor2024:"",
+		revenueForMonth1:"",
+		revenueForMonth2:"",
+		revenueForMonth3:"",
+		revenueForMonth4:"",
+		employeesForMonth1:"",
+		employeesForMonth2:"",
+		employeesForMonth3:"",
+		employeesForMonth4:"",
 		whereDidYouHearAboutUs: "",
-		registeredWithSARS: "yes",
-		taxCompliance: "compliant",
-		bbbbeeCertificate: "yes",
+		registeredWithSARS: "",
+		taxCompliance: "",
+		bbbbeeCertificate: "",
 		motivation: "",
 		challenges: "",
 		interventions: {
@@ -71,6 +85,13 @@
 		documents: [] // 🔹 Store file URLs here
 	});
 
+	// ✅ Update fullName dynamically when firstName or lastName changes
+	function updateFullName() {
+		formData.update(data => ({
+			...data,
+			fullName: `${data.firstName} ${data.lastName}`.trim()
+		}));
+	}
 
 	const minWordCount = {
 		businessDescription: 200,
@@ -81,11 +102,11 @@
 	const softwareAreas = ["Financial Management", "Human Resources", "Marketing", "Risk Management", "Other"]
 	const sections = {
 		"Marketing and Sales": [
-			"Website Development & Domain Email Registration", "Website Hosting", "Logo",
-			"Social Media Page Setup", "Industry Membership", "Company Profile",
+			"Website Development & Domain Email Registration", "Website Hosting", "Company Logo",
+			"Social Media", "Industry Membership", "Company Profile",
 			"Email Signature", "Business Cards", "Branded Banner",
-			"Pamphlets Brochures", "Marketing Linkages Time", "Marketing Plan",
-			"Other Marketing Support", "CRM Solutions Linkages", "Linkages With Chef"
+			"Pamphlets Brochures", "Access To Market & Linkages", "Marketing Plan",
+			 "CRM Solutions", "Other Marketing Support"
 		],
 		"Financial Management & Systems": [
 			"Management Accounts", "Financial Management Templates",
@@ -94,23 +115,22 @@
 		],
 		"Regulatory Compliance": [
 			"Insurance Tips Webinar", "Regulatory Compliance (VAT UIF COIDA Registration)",
-			"Risk Management Plan", "HRM Support (Key Templates)",
-			"Food Compliance Guidance (Webinar)"
+			"Risk Management Plan", "Human Resources Management Support ",
+			"Food Compliance Guidance"
 		],
-		"Business Mentorship": [
+		"Business Mentorship & Coaching": [
 			"Financial Literacy Mentoring", "Marketing Mentoring",
-			"Executive Mentoring", "Business Ops Plan", "Strategic Plan",
+			"Executive Mentoring", "Business Operational Plan", "Strategic Plan",
 			"Business Communication (How To Pitch)", "Digital Transformation"
 		],
 		"Technical Training & Webinars": [
 			"Excel Skills Training", "Industry Seminars", "Fireside Chat",
-			"Industry Training (Courses)", "PUM"
+			"Industry Training", "Powerpoint"
 		],
 		"Operational Support": [
-			"Tools And Equipment Time", "Data Support", "Technology Application Support"
+			"Tools And Equipment Time", "Data Support", "Technology Application Support", "AI Readiness Support"
 		],
-		"Growth Plan": ["Growth Plan"],
-		"Project Management": ["Project Facilitation", "Other Support TimeCost"]
+		"Project Management": ["Project Facilitation", "Other Support"]
 	};
 
 	onMount(async () => {
@@ -309,6 +329,76 @@
 		}
 	};
 
+	// ✅ Validate South African ID Number (13-digit with checksum)
+	function isValidSouthAfricanID(idNumber: string): boolean {
+		if (!/^\d{13}$/.test(idNumber)) return false; // Must be exactly 13 digits
+
+		// Extract the birthdate (YYMMDD)
+		const birthYear = parseInt(idNumber.substring(0, 2), 10);
+		const birthMonth = parseInt(idNumber.substring(2, 4), 10);
+		const birthDay = parseInt(idNumber.substring(4, 6), 10);
+
+		// Convert YY to YYYY (assume 1900s for 00-99, 2000s for 00-24)
+		const currentYear = new Date().getFullYear() % 100; // Get last 2 digits of the year
+		const fullYear = birthYear > currentYear ? 1900 + birthYear : 2000 + birthYear;
+
+		// Validate Date
+		const birthDate = new Date(fullYear, birthMonth - 1, birthDay);
+		if (
+			birthDate.getFullYear() !== fullYear ||
+			birthDate.getMonth() + 1 !== birthMonth ||
+			birthDate.getDate() !== birthDay
+		) {
+			return false;
+		}
+
+		// **Luhn Algorithm Check**
+		const digits = idNumber.split("").map(Number);
+		let sum = 0;
+		let alternate = false;
+
+		for (let i = digits.length - 1; i >= 0; i--) {
+			let num = digits[i];
+
+			if (alternate) {
+				num *= 2;
+				if (num > 9) num -= 9;
+			}
+
+			sum += num;
+			alternate = !alternate;
+		}
+
+		return sum % 10 === 0;
+	}
+	// ✅ Auto-format Registration Number (YYYY/NNNNNN/06)
+	function formatRegistrationNumber(value: string) {
+		// Remove non-digit characters
+		let digits = value.replace(/\D/g, "").slice(0, 10); // Max 10 digits
+		if (digits.length < 10) return digits;
+
+		// Format as YYYY/NNNNNN/06
+		return `${digits.slice(0, 4)}/${digits.slice(4, 10)}/06`;
+	}
+
+	// ✅ Ensure age is limited to 2 digits only
+	function validateAge(event: FocusEvent) {
+		let value = (event.target as HTMLInputElement).value.trim(); // Get input value
+		let numericValue = value.replace(/\D/g, ""); // Remove non-numeric characters
+
+		if (numericValue.length !== 2 || parseInt(numericValue, 10) < 10 || parseInt(numericValue, 10) > 99) {
+			alert("❌ Enter a valid age (10-99)");
+			(event.target as HTMLInputElement).value = ""; // Clear the field
+			$formData.applicantAge = "";
+		} else {
+			$formData.applicantAge = numericValue; // Set valid age
+		}
+	}
+
+	// ✅ Ensure years of trading is 1 or 2 digits only
+	function validateYearsOfTrading(value: string) {
+		return value.replace(/\D/g, "").slice(0, 2); // Allow only up to 2 digits
+	}
 	// Modal Visibility
 	let showModal = writable(false);
 	let modalMessage = writable("Processing your application...");
@@ -525,17 +615,31 @@
 						<Card.Description>Provide some details about yourself.</Card.Description>
 					</Card.Header>
 					<Card.Content class="grid gap-6">
-						<Label for="full-name">Full Name</Label>
+						<Label for="first-name">First Name</Label>
 						<Input
-							id="full-name"
-							bind:value={$formData.fullName}
-							placeholder="Enter your full name"
+							id="first-name"
+							bind:value={$formData.firstName}
+							placeholder="Enter your first name"
+							on:input={updateFullName}
+						/>
+						<Label for="last-name">Surname</Label>
+						<Input
+							id="last-name"
+							bind:value={$formData.lastName}
+							placeholder="Enter your surname"
+							on:input={updateFullName}
 						/>
 						<Label for="applicant-id-number">ID Number</Label>
 						<Input
 							id="applicant-id-number"
 							bind:value={$formData.applicantIDNumber}
-							placeholder="Enter your ID number"
+							placeholder="Enter Your ID Number"
+							on:blur={() => {
+								if (!isValidSouthAfricanID($formData.applicantIDNumber)) {
+									alert("❌ Invalid ID Number Format!");
+									formData.update(data => ({ ...data, applicantIDNumber: "" }));
+								}
+							}}
 						/>
 						<Label for="gender">Select Gender</Label>
 						<Select.Root
@@ -550,16 +654,19 @@
 								<Select.Value placeholder="Select Gender" />
 							</Select.Trigger>
 							<Select.Content>
-								<Select.Item value="male">Male</Select.Item>
-								<Select.Item value="female">Female</Select.Item>
+								<Select.Item value="Male">Male</Select.Item>
+								<Select.Item value="Female">Female</Select.Item>
 							</Select.Content>
 						</Select.Root>
 						<input hidden bind:value={$formData.applicantGender} name="applicantGender" />
-
-
 						<Label for="owner-age">Age</Label>
-						<Input id="owner-age" type="number" bind:value={$formData.applicantAge} placeholder="Enter Your Age"/>
-
+						<Input
+							id="owner-age"
+							type="text"
+							bind:value={$formData.applicantAge}
+							on:blur={validateAge}
+							placeholder="Enter your age"
+						/>
 						<Label for="gender">Do You Have Any Disability</Label>
 						<Select.Root
 							selected={selectedDisability}
@@ -573,8 +680,8 @@
 								<Select.Value placeholder="Select Response" />
 							</Select.Trigger>
 							<Select.Content>
-								<Select.Item value="yes">Yes</Select.Item>
-								<Select.Item value="no">No</Select.Item>
+								<Select.Item value="Yes">Yes</Select.Item>
+								<Select.Item value="No">No</Select.Item>
 							</Select.Content>
 						</Select.Root>
 						<input hidden bind:value={$formData.applicantDisability} name="applicantDisability" />
@@ -584,10 +691,10 @@
 						<Select.Root
 							selected={selectedAcademicQualification}
 							onSelectedChange={(v) => {
-    if (v) {
-      $formData.applicantAcademicQualification = v.value;
-    }
-  }}
+								if (v) {
+									$formData.applicantAcademicQualification = v.value;
+								}
+							}}
 						>
 							<Select.Trigger id="academic-qualification">
 								<Select.Value placeholder="Select Response" />
@@ -605,35 +712,31 @@
 								<Select.Item value="phd">PhD</Select.Item>
 							</Select.Content>
 						</Select.Root>
-
 						<input hidden bind:value={$formData.applicantAcademicQualification} name="applicantAcademicQualification" />
 
-
 						<Label for="dut-student">Are You A DUT Student</Label>
-
 						<Select.Root
 							selected={selectedAreYouDUTStudent}
 							onSelectedChange={(v) => {
-    if (v) {
-      $formData.areYouDUTStudent = v.value;
-    }
-  }}
+								if (v) {
+									$formData.areYouDUTStudent = v.value;
+								}
+							}}
 						>
 							<Select.Trigger id="dut-student">
 								<Select.Value placeholder="Select Response" />
 							</Select.Trigger>
 							<Select.Content>
-								<Select.Item value="yes">Yes</Select.Item>
-								<Select.Item value="no">No</Select.Item>
+								<Select.Item value="Yes">Yes</Select.Item>
+								<Select.Item value="No">No</Select.Item>
 							</Select.Content>
 						</Select.Root>
-
 						<input hidden bind:value={$formData.areYouDUTStudent} name="areYouDUTStudent" />
 
-					</Card.Content>
 					<Card.Footer class="flex justify-end">
 						<Button on:click={nextStep}>Next →</Button>
 					</Card.Footer>
+					</Card.Content>
 				</Card.Root>
 			</div>
 		{/if}
@@ -666,15 +769,22 @@
 							placeholder="Describe your business"
 							on:input={() => minWordCount.businessDescription = countWords($formData.businessDescription)}
 						/>
-						<p class="word-count">Word count: {minWordCount.businessDescription} / 200</p>
+						<p class="word-count {countWords($formData.businessDescription) < 200 ? 'warning' : ''}">
+							Word count: {countWords($formData.businessDescription)} / 200
+						</p>
 						<Label for="years-of-trading">Number of years of trading</Label>
-						<Input id="years-of-trading" type="number" bind:value={$formData.yearsOfTrading} />
-
+						<Input
+							id="years-of-trading"
+							bind:value={$formData.yearsOfTrading}
+							placeholder="Enter number of years"
+							on:input={(e) => formData.update(data => ({ ...data, yearsOfTrading: validateYearsOfTrading(e.target.value) }))}
+						/>
 						<Label for="registration-number">Registration Number</Label>
 						<Input
 							id="registration-number"
 							bind:value={$formData.registrationNumber}
-							placeholder="Enter registration number"
+							placeholder="Enter Your Registration Number"
+							on:input={(e) => formData.update(data => ({ ...data, registrationNumber: formatRegistrationNumber(e.target.value) }))}
 						/>
 						<Label for="date-registration">Date of Registration</Label>
 						<Input id="date-registration" type="date" bind:value={$formData.dateOfRegistration} />
@@ -772,30 +882,53 @@
 						<Card.Title class="text-lg font-medium">Step 3: Finance & Performance</Card.Title>
 					</Card.Header>
 					<Card.Content class="grid gap-6">
-						<Label for="revenue-for-2023">Turnover For 2023</Label>
-						<Input
-							id="revenue-for-2023"
-							bind:value={$formData.revenueFor2023}
-							placeholder="Enter your turnover for the year 2023"
-						/>
-						<Label for="revenue-for-2024">Turnover For 2024</Label>
-						<Input
-							id="revenue-for-2024"
-							bind:value={$formData.revenueFor2024}
-							placeholder="Enter your turnover for the year 2024"
-						/>
-						<Label for="revenue-for-past-four-months">Revenue For The Past Four Months Revenue</Label>
-						<Input
-							id="revenue-for-past-four-months"
-							bind:value={$formData.pastFourMonthsTurnover}
-							placeholder="Enter your revenue for the previous four months"
-						/>
-						<Label for="number-of-employees">Number Of Employees</Label>
-						<Input
-							id="number-of-employees"
-							bind:value={$formData.businessNumberOfEmployees}
-							placeholder="Enter your revenue for the year 2024"
-						/>
+						<Card.Content class="grid gap-6">
+							<!-- 🔹 Yearly Data (2022 - 2024) -->
+							{#each [2022, 2023, 2024] as year}
+								<div class="grid grid-cols-3 gap-4">
+									<Label for="revenue-{year}">Year: {year}</Label>
+									<Input
+										id="revenue-{year}"
+										bind:value={$formData[`revenueFor${year}`]}
+										placeholder="Enter revenue for {year}"
+									/>
+									<Input
+										id="employees-{year}"
+										bind:value={$formData[`employeesFor${year}`]}
+										placeholder="Enter employees for {year}"
+									/>
+								</div>
+							{/each}
+
+							<!-- 🔹 Monthly Data -->
+							{#each [1, 2, 3, 4] as month}
+								<div class="grid grid-cols-3 gap-4">
+									<Select.Root
+										onSelectedChange={(v) => formData.update(data => ({ ...data, selectedMonth: v.value }))}
+									>
+										<Select.Trigger id="month">
+											<Select.Value placeholder="Select Month" />
+										</Select.Trigger>
+										<Select.Content>
+											{#each ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] as monthOption}
+												<Select.Item value={monthOption}>{monthOption}</Select.Item>
+											{/each}
+										</Select.Content>
+									</Select.Root>
+
+									<Input
+										id="revenue-{month}"
+										bind:value={$formData[`revenueFor${month}`]}
+										placeholder="Enter revenue for {month}"
+									/>
+									<Input
+										id="employees-{month}"
+										bind:value={$formData[`employeesFor${month}`]}
+										placeholder="Enter employees for {month}"
+									/>
+								</div>
+							{/each}
+						</Card.Content>
 						<Label for="business-growth-rate">Business Growth Rate</Label>
 						<Input
 							id="business-growth-rate"
@@ -840,14 +973,12 @@
 						<Card.Title class="text-lg font-medium">Step 4: Motivation & Challenges</Card.Title>
 					</Card.Header>
 					<Card.Content class="grid gap-6">
-						<Label for="motivation">Why do you want to join? (Min: 200 words)</Label>
+						<Label for="motivation">Why do you want to join?</Label>
 						<Textarea
 							id="motivation"
 							bind:value={$formData.motivation}
 							placeholder="Explain your motivation"
-							on:input={() => minWordCount.motivation = countWords($formData.motivation)}
 						/>
-						<p class="word-count">Word count: {minWordCount.motivation} / 200</p>
 					</Card.Content>
 					<Card.Content class="grid gap-6">
 						<Label for="intervention-selection">What form of intervention do you need?</Label>
@@ -896,30 +1027,20 @@
 					</Card.Content>
 					<Card.Content class="grid gap-6">
 						<Label for="intervention-selection">Does Your Business Currently Have Any Form Of System In Use?</Label>
-						<Accordion.Root type="multiple">
-							{#each softwareAreas as area}
-								<Accordion.Item value={area}>
-									<!-- Click to expand -->
-									<Accordion.Trigger>
-										<div class="flex justify-between items-center w-full px-4 py-2 rounded-md cursor-pointer">
-											<span class="font-semibold">{area}</span>
-										</div>
-									</Accordion.Trigger>
-									<!-- Show checkboxes when clicked -->
-									<Accordion.Content class="px-4 py-2 rounded-md">
-										<div class="grid grid-cols-2 gap-4">
-											<div>
-													<div class="flex items-center gap-2 mb-2">
-														<Checkbox
-														/>
-														<Label>Yes</Label>
-													</div>
-											</div>
-										</div>
-									</Accordion.Content>
-								</Accordion.Item>
-							{/each}
-						</Accordion.Root>
+						<div class="grid gap-6">
+							<!-- ✅ Loop through softwareAreas and create checkboxes -->
+							<div class="grid gap-2">
+								{#each softwareAreas as area}
+									<div class="flex items-center gap-2">
+										<Checkbox
+											checked={$formData.softwareAreas[area].includes(area)}
+										/>
+										<Label>{area}</Label>
+									</div>
+								{/each}
+							</div>
+						</div>
+
 					</Card.Content>
 					<Card.Footer class="flex justify-between">
 						<Button variant="ghost" on:click={prevStep}>← Back</Button>

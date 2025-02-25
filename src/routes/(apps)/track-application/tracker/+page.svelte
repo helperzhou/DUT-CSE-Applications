@@ -28,18 +28,19 @@
 
 	const loggedInUser = writable<{ fullName: string; email: string } | null>(null);
 
+	// Track if user has applications
+	const hasApplications = writable<boolean | null>(null);
+
 	async function fetchUserData(email: string) {
 		try {
-			console.log("📌 Fetching Firestore data for:", email);
 			const usersRef = collection(db, "Users");
 			const q = query(usersRef, where("userEmail", "==", email));
 			const querySnapshot = await getDocs(q);
 
 			if (!querySnapshot.empty) {
 				const userData = querySnapshot.docs[0].data();
-				console.log("✅ Found user in Firestore:", userData);
 				loggedInUser.set({ fullName: userData.userFullName, email: userData.userEmail });
-				console.log("✅ Logged In User:", get(loggedInUser)?.fullName);
+
 			} else {
 				console.warn("⚠️ No user found in Firestore.");
 				loggedInUser.set(null);
@@ -49,23 +50,79 @@
 		}
 	}
 
-	onMount(async () => {
-		onAuthStateChanged(auth, async (user) => {
-			console.log("🔹 Auth state changed:", user);
-			if (user && user.email) {
-				console.log("✅ Authenticated user detected:", user.email);
-				await fetchUserData(user.email);
+	// Store dashboard metrics
+	const totalApplications = writable(0);
+	const rejectedApplications = writable(0);
+	const underReviewApplications = writable(0);
+
+	async function getUserIdByEmail(email: string) {
+		try {
+			const usersRef = collection(db, "Users");
+			const q = query(usersRef, where("userEmail", "==", email));
+			const querySnapshot = await getDocs(q);
+
+			if (!querySnapshot.empty) {
+				return querySnapshot.docs[0].id; // Return Firestore document ID
+			}
+			return null;
+		} catch (error) {
+			console.error("🔥 Error fetching user ID:", error);
+			return null;
+		}
+	}
+
+	async function fetchUserApplications(email: string) {
+		try {
+			console.log("📌 Checking applications for:", email);
+			const userId = await getUserIdByEmail(email);
+			if (!userId) {
+				hasApplications.set(false); // Ensure dashboard doesn't show
+				return;
+			}
+
+			const applicationsRef = collection(db, `Users/${userId}/Applications`);
+			const querySnapshot = await getDocs(applicationsRef);
+
+			if (!querySnapshot.empty) {
+				const applications = querySnapshot.docs.map((doc) => doc.data());
+
+				totalApplications.set(applications.length);
+				rejectedApplications.set(applications.filter(app => app.aiResponse === "Rejected").length);
+				underReviewApplications.set(applications.filter(app => app.status === "Under Review").length);
+
+				console.log(`✅ Total: ${applications.length}, Rejected: ${rejectedApplications}, Under Review: ${underReviewApplications}`);
+				hasApplications.set(true);
 			} else {
-				console.warn("⚠️ No authenticated user found.");
+				console.warn("⚠️ No applications found.");
+				hasApplications.set(false); // **Ensuring dashboard doesn't show**
+			}
+		} catch (error) {
+			console.error("🔥 Error fetching applications:", error);
+			hasApplications.set(false); // **Ensure dashboard does not appear in case of error**
+		}
+	}
+
+	onMount(() => {
+		onAuthStateChanged(auth, async (user) => {
+			if (user?.email) {
+				loggedInUser.set({ fullName: user.displayName || "User", email: user.email });
+				await fetchUserData(user.email);
+				await fetchUserApplications(user.email);
+			} else {
 				loggedInUser.set(null);
+				hasApplications.set(null);
 			}
 		});
 	});
+
+	function redirectToPrograms() {
+		goto("/track-application/tracker/programs");
+	}
 	// Handle Logout
 	const handleLogout = async () => {
 		try {
 			await signOut(auth);
-			goto("/track-application/signin"); // Redirect after logout
+			goto("/signin"); // Redirect after logout
 		} catch (error) {
 			console.error("Logout error:", error);
 		}
@@ -152,39 +209,56 @@
 			</DropdownMenu.Root>
 		</header>
 		<main class="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-			<div class="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
-				<Card.Root>
-					<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-						<Card.Title class="text-sm font-medium">Applications</Card.Title>
-						<CreditCard class="h-4 w-4 text-muted-foreground" />
-					</Card.Header>
-					<Card.Content>
-						<div class="text-2xl font-bold">+10</div>
-						<p class="text-xs text-muted-foreground">+0.1% from last month</p>
-					</Card.Content>
-				</Card.Root>
-				<Card.Root>
-					<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-						<Card.Title class="text-sm font-medium">Acceptance Rate</Card.Title>
-						<Users class="h-4 w-4 text-muted-foreground" />
-					</Card.Header>
-					<Card.Content>
-						<div class="text-2xl font-bold">4/10</div>
-						<p class="text-xs text-muted-foreground">4%</p>
-					</Card.Content>
-				</Card.Root>
-				<Card.Root>
-					<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-						<Card.Title class="text-sm font-medium">Pending Review</Card.Title>
-						<Activity class="h-4 w-4 text-muted-foreground" />
-					</Card.Header>
-					<Card.Content>
-						<div class="text-2xl font-bold">+3</div>
-						<p class="text-xs text-muted-foreground">+1 since last hour</p>
-					</Card.Content>
-				</Card.Root>
-			</div>
-			<ApplicationsTable/>
+			{#if $hasApplications === false}
+			<div class="flex flex-col items-center justify-center h-[450px] w-full p-6 rounded-lg shadow-lg">
+					<h2 class="text-lg font-bold text-white">No Applications Found</h2>
+					<p class="text-sm text-gray-500">You have not applied for any program yet.</p>
+					<Button class="mt-4 bg-blue-600 hover:bg-accent text-white px-4 py-2 rounded-md" on:click={redirectToPrograms}>
+						View Available Programs
+					</Button>
+				</div>
+			{:else}
+				<div class="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
+					<!-- ✅ Total Applications -->
+					<Card.Root>
+						<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+							<Card.Title class="text-sm font-medium">Total Applications</Card.Title>
+							<CreditCard class="h-4 w-4 text-muted-foreground" />
+						</Card.Header>
+						<Card.Content>
+							<div class="text-2xl font-bold">{$totalApplications}</div>
+							<p class="text-xs text-muted-foreground">Total applications submitted</p>
+						</Card.Content>
+					</Card.Root>
+
+					<!-- ✅ Rejected Applications -->
+					<Card.Root>
+						<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+							<Card.Title class="text-sm font-medium">Rejected Applications</Card.Title>
+							<Activity class="h-4 w-4 text-muted-foreground" />
+						</Card.Header>
+						<Card.Content>
+							<div class="text-2xl font-bold">{$rejectedApplications}</div>
+							<p class="text-xs text-muted-foreground">Applications not approved</p>
+						</Card.Content>
+					</Card.Root>
+
+					<!-- ✅ Applications Under Review -->
+					<Card.Root>
+						<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+							<Card.Title class="text-sm font-medium">Under Review</Card.Title>
+							<Users class="h-4 w-4 text-muted-foreground" />
+						</Card.Header>
+						<Card.Content>
+							<div class="text-2xl font-bold">{$underReviewApplications}</div>
+							<p class="text-xs text-muted-foreground">Applications currently being reviewed</p>
+						</Card.Content>
+					</Card.Root>
+				</div>
+				<ApplicationsTable/>
+			{/if}
+
+
 		</main>
 	</div>
 </div>
