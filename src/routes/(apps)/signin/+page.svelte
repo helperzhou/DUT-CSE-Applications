@@ -9,6 +9,7 @@
 	import  {Icons} from "$lib/components/ui/icons";
 	import { writable } from 'svelte/store';
 	import { slide } from "svelte/transition"; // ✅ Import slide transition
+	import GLTFModel from "$lib/components/ui/GLTFModel.svelte";
 
 	const isSliding = writable(false);
 	// ✅ Add transition before navigating to signup
@@ -158,7 +159,6 @@
 					{/if}
 				</Button>
 
-				<!--				<Button variant="outline" class="w-full">Login with Google</Button>-->
 			</div>
 			<div class="mt-4 text-center text-sm">
 				Don&apos;t have an account?
@@ -168,25 +168,46 @@
 	</div>
 
 	<!-- Background Section -->
-	<div class="bg-muted relative hidden h-full flex-col p-10 text-white lg:flex dark:border-r">
-		<div
-			class="absolute inset-0 bg-cover"
-			style="
-				background-image:
-					url(https://images.unsplash.com/photo-1590069261209-f8e9b8642343?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1376&q=80);"
-		></div>
+	<!-- Right-Side Background Section -->
+
+
+<!--	<div class="bg-muted relative hidden h-full flex-col p-10 text-white lg:flex dark:border-r">-->
+<!--		<div-->
+<!--			class="absolute inset-0 bg-cover"-->
+<!--			style="-->
+<!--				background-image:-->
+<!--					url(https://images.unsplash.com/photo-1590069261209-f8e9b8642343?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1376&q=80);"-->
+<!--		></div>-->
+<!--		<div class="relative flex items-center text-lg font-medium">-->
+<!--			&lt;!&ndash; ✅ Icon Positioned Absolutely Behind Text &ndash;&gt;-->
+<!--			<div class="absolute left-4 top-1/2 -translate-y-1/2 opacity-1">-->
+<!--				<img src="/dut-cseri.png" alt="CSE Icon" class="h-16 w-26 object-cover">-->
+<!--			</div>--><!-- ✅ Right-Side Background Section -->
+	<!-- ✅ Right-Side Background Section with Background Image -->
+	<div class="relative hidden h-full flex-col p-10 text-white lg:flex dark:border-r background-img">
+		<!-- Header Text -->
 		<div class="relative flex items-center text-lg font-medium">
-			<!-- ✅ Icon Positioned Absolutely Behind Text -->
-			<div class="absolute left-4 top-1/2 -translate-y-1/2 opacity-1">
+			<div class="absolute left-4 top-4 opacity-90">
 				<img src="/dut-cseri.png" alt="CSE Icon" class="h-16 w-26 object-cover">
 			</div>
-			<!-- ✅ Text with Higher z-index -->
 			<span class="relative z-10 ml-60">DUT | CSE Rapid Incubation Program</span>
 		</div>
 
-		<div class="absolute right-2 bottom-2 -translate-y-1/2 z-20">
-			<img src="/quantIcon.png" alt="User Avatar" class="h-16 w-26 rounded-sm object-contain opacity-1">
+		<!-- ✅ Insert Larger 3D Model Inside the Right-Side Div -->
+		<div class="relative flex items-center justify-center h-full">
+			<GLTFModel />
 		</div>
 
+		<!-- ✅ Powered by Text & Icon (Bottom-Right) -->
+		<div class="absolute right-2 bottom-2 text-center">
+			<img src="/QuantilytixO.png" alt="Quant Logo" class="h-32 w-[250px] rounded-sm object-contain opacity-90">
+		</div>
 	</div>
 </div>
+<style>
+    /* ✅ Background Image Instead of Gradient */
+    .background-img {
+        background: url("/background.jpg") no-repeat center center;
+        background-size: cover;
+    }
+</style>
