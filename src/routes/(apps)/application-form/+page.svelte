@@ -46,8 +46,6 @@
 		socialMediaOtherAddress:"",
 		natureOfBusiness: "",
 		businessDescription: "",
-		annualTurnover: "",
-		pastFourMonthsTurnover: "",
 		businessNumberOfEmployees: "",
 		businessGrowthRate: "",
 		postalCode: "",
@@ -98,6 +96,7 @@
 		motivation: 200,
 		challenges: 200,
 	};
+
 
 	const softwareAreas = ["Financial Management", "Human Resources", "Marketing", "Risk Management", "Other"]
 	const sections = {
@@ -159,7 +158,11 @@
 		}
 	});
 
-
+	// Participation Options
+	const participationOptions = [
+		{ label: "Yes", value: "Yes" },
+		{ label: "No", value: "No" }
+	];
 
 	const updateInterventions = (category: string, item: string) => {
 		formData.update((data) => {
@@ -181,7 +184,6 @@
 			};
 		});
 	};
-
 
 
 	// Steps for Navigation
@@ -226,6 +228,15 @@
 			value: $formData.registeredWithSARS
 		}
 		: undefined;
+	// Calculate Business Growth Rate
+	$: formData.update(data => {
+		if (data.revenueFor2022 && data.revenueFor2023) {
+			const revenue2022 = parseFloat(data.revenueFor2022);
+			const revenue2023 = parseFloat(data.revenueFor2023);
+			data.businessGrowthRate = revenue2022 > 0 ? ((revenue2023 / revenue2022) - 1).toFixed(2) : "N/A";
+		}
+		return data;
+	});
 
 	// File Input Binding
 	let selectedFiles = [];
@@ -414,7 +425,8 @@
 	const requiredFields = {
 		0: ["fullName", "applicantGender", "applicantIDNumber", "applicantAge", "applicantAcademicQualification", "areYouDUTStudent"],
 		1: ["businessName", "natureOfBusiness", "businessDescription", "yearsOfTrading", "registrationNumber", "dateOfRegistration", "businessAddress", "postalCode"],
-		2: ["revenueFor2023", "revenueFor2024", "pastFourMonthsTurnover", "businessNumberOfEmployees", "businessGrowthRate", "registeredWithSARS"],
+		2: ["revenueFor2022", "revenueFor2023", "revenueFor2024", "revenueForMonth1","revenueForMonth2","revenueForMonth3","revenueForMonth4", "employeesFor2022", "employeesFor2023","employeesFor2024",
+			"employeesForMonth1","employeesForMonth2","employeesForMonth3","employeesForMonth4", "registeredWithSARS"],
 		3: ["motivation"],
 		4: ["documents"] // Ensure at least one document is uploaded
 	};
@@ -899,7 +911,7 @@
 									/>
 								</div>
 							{/each}
-
+							<h3 class="text-lg font-medium">Enter your revenue and employees for the past four months</h3>
 							<!-- 🔹 Monthly Data -->
 							{#each [1, 2, 3, 4] as month}
 								<div class="grid grid-cols-3 gap-4">
@@ -919,7 +931,7 @@
 									<Input
 										id="revenue-{month}"
 										bind:value={$formData[`revenueFor${month}`]}
-										placeholder="Enter revenue for {month}"
+										placeholder="Enter revenue for month {month}"
 									/>
 									<Input
 										id="employees-{month}"
@@ -929,12 +941,12 @@
 								</div>
 							{/each}
 						</Card.Content>
-						<Label for="business-growth-rate">Business Growth Rate</Label>
-						<Input
-							id="business-growth-rate"
-							bind:value={$formData.businessGrowthRate}
-							placeholder="Enter your growth rate"
-						/>
+<!--						<Label for="business-growth-rate">Business Growth Rate</Label>-->
+<!--						<Input-->
+<!--							id="business-growth-rate"-->
+<!--							bind:value={$formData.businessGrowthRate}-->
+<!--							placeholder="Enter your growth rate"-->
+<!--						/>-->
 						<Label for="sars-registration">Registered with SARS?</Label>
 
 						<Select.Root
