@@ -59,8 +59,12 @@ const handleSignup = async () => {
 
         console.log(`✅ User registered successfully: ${user.email} | Role: ${isAdmin ? "Admin" : "User"}`);
 
-        // ✅ Redirect after successful registration
-        goto("/dashboard"); 
+        // ✅ Redirect based on user role
+        if (isAdmin) {
+            goto("/dashboard");
+        } else {
+            goto("/track-application");
+        }
 
     } catch (error) {
         console.error("🔥 Firebase Auth Error:", error);
