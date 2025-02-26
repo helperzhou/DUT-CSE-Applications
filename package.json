@@ -4,15 +4,9 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"deploy": "vite build && az webapp up --runtime 'NODE|18-lts' --name dut-cseri-rapid-incubation-program --resource-group DUT-CSERI-Rapid-Incubation-Program",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"format": "prettier --write .",
-		"lint": "prettier --check . && eslint ."
+		"build": "svelte-kit build",
+		"start": "node build", 
+		"deploy": "npm run build && zip -r app.zip build package.json package-lock.json && az webapp deployment source config-zip --resource-group DUT-CSERI-Rapid-Incubation-Program --name dut-cseri-rapid-incubation-program --src app.zip"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
