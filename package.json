@@ -12,6 +12,7 @@
 		"preview": "vite preview",
 		"start": "node build/index.js",
 		"postbuild": "cp web.config build/",
+		"azure-build": "npm ci --legacy-peer-deps && npm run build",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
