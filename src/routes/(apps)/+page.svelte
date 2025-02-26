@@ -79,9 +79,8 @@
         left: 20px;
     }
 
-    /* ✅ DUT CSE Icon (Bottom Right) */
     .hero-container::after {
-        background-image: url('/quantIcon.png');
+        background-image: url('/QuantilytixO.png');
         bottom: 20px;
         right: 20px;
     }
