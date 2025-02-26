@@ -16,6 +16,7 @@
 
 	// Stores to hold dashboard metrics
 	const totalApplications = writable<number>(0);
+	const totalRevenue = writable<number>(0);
 	const averageCompanyAge = writable<number>(0);
 	const averageOwnerAge = writable<number>(0);
 
@@ -27,6 +28,7 @@
 			const usersSnapshot = await getDocs(usersRef);
 
 			let totalApps = 0;
+			let totalRev = 0;
 			let companyAgeSum = 0;
 			let ownerAgeSum = 0;
 			let companyAgeCount = 0;
@@ -55,13 +57,18 @@
 						ownerAgeSum += appData.applicantAge;
 						ownerAgeCount++;
 					}
-				});
-			}
+				// ✅ Revenue Calculation
+                if (appData.revenueFor2024 !== undefined) {
+                    totalRev += parseFloat(appData.revenueFor2024) || 0;
+                }
+            });
+        }
 
-			// Update Writable Stores
-			totalApplications.set(totalApps);
-			averageCompanyAge.set(companyAgeCount ? parseFloat((companyAgeSum / companyAgeCount).toFixed(1)) : 0);
-			averageOwnerAge.set(ownerAgeCount ? parseFloat((ownerAgeSum / ownerAgeCount).toFixed(1)) : 0);
+        // ✅ Update Writable Stores
+        totalApplications.set(totalApps);
+        totalRevenue.set(totalRev);
+        averageCompanyAge.set(companyAgeCount ? parseFloat((companyAgeSum / companyAgeCount).toFixed(1)) : 0);
+        averageOwnerAge.set(ownerAgeCount ? parseFloat((ownerAgeSum / ownerAgeCount).toFixed(1)) : 0);
 
 		} catch (error) {
 			console.error("🔥 Error Fetching Applications:", error);
@@ -90,7 +97,7 @@
 					<DollarSign class="h-4 w-4 text-muted-foreground" />
 				</Card.Header>
 				<Card.Content>
-					<div class="text-2xl font-bold">R0</div>
+					<div class="text-2xl font-bold">R{$totalRevenue.toLocaleString()}</div>
 				</Card.Content>
 			</Card.Root>
 			<Card.Root>
