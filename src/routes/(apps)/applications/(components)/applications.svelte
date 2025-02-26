@@ -28,6 +28,16 @@
 	import  {Icons} from "$lib/components/ui/icons/index";
 	const isLoading = writable(false); // ✅ Now it's a store
 
+	// Stores
+	let acceptedApplications = writable(0);
+	let rejectedApplications = writable(0);
+	let weeklyApplications = writable(0);
+	let monthlyApplications = writable(0);
+
+	// Fetch Applications Data from Firestore
+	onMount(async () => {
+		await fetchApplicationMetrics();
+	});
 
 	// Stores
 	let isModalOpen = writable(false);
@@ -155,6 +165,43 @@
 			isLoading.set(false);
 		}
 	}
+	async function fetchApplicationMetrics() {
+		try {
+			const usersRef = collection(db, "Users");
+			const usersSnapshot = await getDocs(usersRef);
+			const today = new Date();
+			const startOfWeek = new Date(today);
+			startOfWeek.setDate(today.getDate() - today.getDay()); // Start of the week
+			const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1); // Start of the month
+
+			let acceptedCount = 0;
+			let rejectedCount = 0;
+			let weekCount = 0;
+			let monthCount = 0;
+
+			for (const userDoc of usersSnapshot.docs) {
+				const applicationsRef = collection(db, `Users/${userDoc.id}/Applications`);
+				const applicationsSnapshot = await getDocs(applicationsRef);
+
+				applicationsSnapshot.forEach((appDoc) => {
+					const appData = appDoc.data();
+					if (appData.applicationStatus === "Accepted") acceptedCount++;
+					if (appData.applicationStatus === "Rejected") rejectedCount++;
+
+					const submittedDate = new Date(appData.submittedAt.seconds * 1000);
+					if (submittedDate >= startOfWeek) weekCount++;
+					if (submittedDate >= startOfMonth) monthCount++;
+				});
+			}
+
+			acceptedApplications.set(acceptedCount);
+			rejectedApplications.set(rejectedCount);
+			weeklyApplications.set(weekCount);
+			monthlyApplications.set(monthCount);
+		} catch (error) {
+			console.error("🔥 Error Fetching Application Metrics:", error);
+		}
+	}
 </script>
 
 <div class="flex min-h-screen w-full flex-col">
@@ -174,13 +221,13 @@
 							<Card.Root>
 								<Card.Header class="pb-2 text-center">
 									<Card.Description>Accepted</Card.Description>
-									<Card.Title class="text-4xl">14</Card.Title>
+									<Card.Title class="text-4xl">{$acceptedApplications}</Card.Title>
 								</Card.Header>
 							</Card.Root>
 							<Card.Root>
 								<Card.Header class="pb-2 text-center">
 									<Card.Description>Rejected</Card.Description>
-									<Card.Title class="text-4xl">8</Card.Title>
+									<Card.Title class="text-4xl">{$rejectedApplications}</Card.Title>
 								</Card.Header>
 							</Card.Root>
 						</div>
@@ -188,26 +235,14 @@
 					<Card.Root>
 						<Card.Header class="pb-2">
 							<Card.Description>This Week</Card.Description>
-							<Card.Title class="text-4xl">14</Card.Title>
+							<Card.Title class="text-4xl">{$weeklyApplications}</Card.Title>
 						</Card.Header>
-						<Card.Content>
-							<div class="text-xs text-muted-foreground">+25% from last week</div>
-						</Card.Content>
-						<Card.Footer>
-							<Progress value={25} aria-label="25% increase" />
-						</Card.Footer>
 					</Card.Root>
 					<Card.Root>
 						<Card.Header class="pb-2">
 							<Card.Description>This Month</Card.Description>
-							<Card.Title class="text-3xl">29</Card.Title>
+							<Card.Title class="text-3xl">{$monthlyApplications}</Card.Title>
 						</Card.Header>
-						<Card.Content>
-							<div class="text-xs text-muted-foreground">+10% from last month</div>
-						</Card.Content>
-						<Card.Footer>
-							<Progress value={12} aria-label="12% increase" />
-						</Card.Footer>
 					</Card.Root>
 				</div>
 				<Tabs.Root value="week">
