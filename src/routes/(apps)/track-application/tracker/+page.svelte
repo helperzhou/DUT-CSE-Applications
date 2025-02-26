@@ -30,7 +30,11 @@
 
 	// Track if user has applications
 	const hasApplications = writable<boolean | null>(null);
-
+	const isLoading = writable(true); // Added loading state to avoid default view before Firestore response
+	// Store dashboard metrics
+	const totalApplications = writable(0);
+	const rejectedApplications = writable(0);
+	const underReviewApplications = writable(0);
 	async function fetchUserData(email: string) {
 		try {
 			const usersRef = collection(db, "Users");
@@ -49,11 +53,6 @@
 			console.error("🔥 Error fetching Firestore user data:", error);
 		}
 	}
-
-	// Store dashboard metrics
-	const totalApplications = writable(0);
-	const rejectedApplications = writable(0);
-	const underReviewApplications = writable(0);
 
 	async function getUserIdByEmail(email: string) {
 		try {
@@ -77,6 +76,7 @@
 			const userId = await getUserIdByEmail(email);
 			if (!userId) {
 				hasApplications.set(false); // Ensure dashboard doesn't show
+				isLoading.set(false); // Stop loading after check
 				return;
 			}
 
@@ -99,6 +99,8 @@
 		} catch (error) {
 			console.error("🔥 Error fetching applications:", error);
 			hasApplications.set(false); // **Ensure dashboard does not appear in case of error**
+		} finally {
+			isLoading.set(false); //
 		}
 	}
 
@@ -111,6 +113,7 @@
 			} else {
 				loggedInUser.set(null);
 				hasApplications.set(null);
+				isLoading.set(false); // Stop loading if user is not authenticated
 			}
 		});
 	});
@@ -131,7 +134,17 @@
 		return name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "?";
 	}
 </script>
-<div class="bg-muted/40 flex min-h-screen w-full flex-col">
+
+{#if $isLoading}
+	<div class="flex justify-center items-center min-h-screen ">
+		<svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+			<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+			<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+		</svg>
+		<p class="ml-2 text-gray-700 text-lg">Getting Everything Ready...</p>
+	</div>
+{:else}
+	<div class="bg-muted/40 flex min-h-screen w-full flex-col">
 	<div class="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
 		<header
 			class="bg-background sticky top-0 z-30 flex h-14 items-center gap-4 border-b px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6"
@@ -262,3 +275,4 @@
 		</main>
 	</div>
 </div>
+{/if}
