@@ -3,42 +3,24 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
+	// Consult https://svelte.dev/docs/kit/integrations
+	// for more information about preprocessors
 	preprocess: vitePreprocess(),
 
 	kit: {
+		// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
+		// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
+		// See https://svelte.dev/docs/kit/adapters for more information about adapters.
 		adapter: adapter({
-			// Output directory for Azure App Service
+			// default options are shown
 			out: 'build',
-			precompress: true, // Precompress files for better performance
-			envPrefix: 'SVELTEKIT_', // Helps Azure detect environment variables
-			polyfill: false // Modern Node.js doesn't need polyfills
+			precompress: false,
+			envPrefix: '',
+			polyfill: true
 		}),
-
-		// Fix path resolution for imports
 		alias: {
-			'$lib': './src/lib',
-			'$components': './src/lib/components',
-			'$routes': './src/routes'
-		},
-
-		// Ensure correct paths for Azure App Service
-		paths: {
-			base: process.env.BASE_PATH || ''
-		},
-
-		// Ensure correct CSP settings (needed in some Azure deployments)
-		csp: {
-			mode: 'auto',
-			directives: {
-				'default-src': ['self'],
-				'script-src': ['self', 'unsafe-inline'],
-				'style-src': ['self', 'unsafe-inline'],
-				'img-src': ['self', 'data:']
-			}
-		},
-
-		// Fixes possible 404s on Azure
-		trailingSlash: 'never'
+			"@/*": "./path/to/lib/*",
+		}
 	}
 };
 
