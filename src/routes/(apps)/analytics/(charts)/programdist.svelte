@@ -183,11 +183,6 @@
 			});
 	};
 </script>
-
----
-
-### **🎨 Updated UI (with Pie Chart & Legend)**
-```html
 <div style="display: flex; gap: 20px;">
 	<svg id="pie"></svg>
 	<div id="legend"></div>
