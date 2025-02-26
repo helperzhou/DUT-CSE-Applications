@@ -1,0 +1,17 @@
+name: Restart Azure Web App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restart Web App
+        run: |
+          # Send a request to the Azure Web App to force a restart
+          curl -X GET "https://dut-cseri-rapid-incubation-program.azurewebsites.net"
+          sleep 5
+          curl -X GET "https://dut-cseri-rapid-incubation-program.azurewebsites.net"
+          
+          echo "Web App restart request sent" 
