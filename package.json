@@ -4,10 +4,12 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"build": "svelte-kit build",
-		"start": "node build", 
-		"deploy": "npm run build && zip -r app.zip build package.json package-lock.json && az webapp deployment source config-zip --resource-group DUT-CSERI-Rapid-Incubation-Program --name dut-cseri-rapid-incubation-program --src app.zip"
-	},
+  "dev": "vite dev",
+  "build": "vite build",
+  "preview": "vite preview",
+  "start": "node build",
+  "deploy": "npm run build && zip -r app.zip build package.json package-lock.json && az webapp deployment source config-zip --resource-group DUT-CSERI-Rapid-Incubation-Program --name dut-cseri-rapid-incubation-program --src app.zip"
+},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
 		"@eslint/js": "^9.18.0",
