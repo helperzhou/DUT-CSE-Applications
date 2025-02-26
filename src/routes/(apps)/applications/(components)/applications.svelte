@@ -374,16 +374,29 @@ app.applicationStatus === "Accepted"
 								</li>
 								<li class="flex items-center justify-between">
 									<span class="text-muted-foreground"> Previous Year Revenue </span>
-									<span>{$selectedApplication?.annualTurnover}</span>
+									<span>{$selectedApplication?.revenueFor2024}</span>
 								</li>
-								<li class="flex items-center justify-between">
-									<span class="text-muted-foreground"> Past Four Months Turnover </span>
-									<span>{$selectedApplication?.annualTurnover}</span>
-								</li>
-								<li class="flex items-center justify-between">
-									<span class="text-muted-foreground"> Number Of Workers</span>
-									<span>{$selectedApplication?.employees}</span>
-								</li>
+								<li class="flex flex-col">
+	<span class="text-muted-foreground font-semibold mb-2">Past Four Months Overview</span>
+	<table class="w-full border border-gray-300 text-sm">
+		<thead>
+			<tr class="bg-gray-100">
+				<th class="border border-gray-300 p-2 text-left">Month</th>
+				<th class="border border-gray-300 p-2 text-left">Revenue</th>
+				<th class="border border-gray-300 p-2 text-left">Employees</th>
+			</tr>
+		</thead>
+		<tbody>
+			{#each [1, 2, 3, 4] as month}
+				<tr class="border-b border-gray-300">
+					<td class="border border-gray-300 p-2">Month {month}</td>
+					<td class="border border-gray-300 p-2">{$selectedApplication?.[`revenueForMonth${month}`] || "N/A"}</td>
+					<td class="border border-gray-300 p-2">{$selectedApplication?.[`employeesForMonth${month}`] || "N/A"}</td>
+				</tr>
+			{/each}
+		</tbody>
+	</table>
+</li>
 
 							</ul>
 							<div class="font-semibold">Top Interventions</div>
