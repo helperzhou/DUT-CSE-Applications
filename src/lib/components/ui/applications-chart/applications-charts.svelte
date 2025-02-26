@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onMount, writable, get } from "svelte";
+	import { onMount } from "svelte";
+import { writable, get } from "svelte/store";  // ✅ Correct import
 	import { collection, getDocs } from "firebase/firestore";
 	import { scaleLinear } from "d3-scale";
 	import { db } from "$lib/firebase";
