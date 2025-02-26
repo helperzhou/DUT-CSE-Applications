@@ -8,9 +8,9 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"deploy": "vite build && az webapp up --runtime 'NODE|18-lts' --name <DUT-CSERI-Rapid-Incubation-Program> --resource-group <DUT-CSERI-Rapid-Incubation-Program>",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"prepare": "vite sync || echo ''",
+		"check": "vite sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "vite sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint ."
 	},
