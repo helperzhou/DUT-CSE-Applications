@@ -1,44 +1,146 @@
 <script lang="ts">
-	import { scaleLinear } from 'd3-scale';
+	import { onMount, writable, get } from "svelte";
+	import { collection, getDocs } from "firebase/firestore";
+	import { scaleLinear } from "d3-scale";
+	import { db } from "$lib/firebase";
 
-	// 🔹 Generate daily data dynamically (e.g., Day 1, Day 2, etc.)
-	const data = Array.from({ length: 30 }, (_, i) => ({
-		name: `Day ${i + 1}`,
-		total: Math.floor(Math.random() * 5000) + 1000
-	}));
+	// 🔹 Props
+	export let isDashboard: boolean = false;
 
-	const xTicks = data.map((d) => d.name);
-	const yTicks = [0, 1500, 3000, 4500, 6000];
+	// 🔹 Writable Stores
+	let applications = writable([]);
+	let groupedData = writable([]);
+	let currentView = writable("daily"); // "daily", "weekly", "monthly"
+	let currentIndex = writable(0);
+
+	// 🔹 Chart Dimensions (Adjust for Dashboard Mode)
 	const padding = { top: 20, right: 15, bottom: 40, left: 45 };
+	let width = isDashboard ? 250 : 1200;
+	let height = isDashboard ? 250 : 400;
 
-	let width = 1200; // 🔹 Increased width for scrolling effect
-	let height = 400;
+	// 🔹 Fetch applications from Firestore
+	const fetchApplications = async () => {
+		try {
+			console.log("🔍 Fetching applications...");
+			const usersRef = collection(db, "Users");
+			const usersSnapshot = await getDocs(usersRef);
 
-	function formatMobile(tick: number | string) {
-		return tick.toString();
-	}
+			let allApplications = [];
 
-	// 🔹 X Scale: Maps index position to screen width
+			for (const userDoc of usersSnapshot.docs) {
+				const applicationsRef = collection(db, `Users/${userDoc.id}/Applications`);
+				const applicationsSnapshot = await getDocs(applicationsRef);
+
+				applicationsSnapshot.forEach((appDoc) => {
+					const appData = appDoc.data();
+					if (appData.submittedAt?.seconds) {
+						allApplications.push({
+							submittedAt: new Date(appData.submittedAt.seconds * 1000), // Convert Firestore timestamp
+						});
+					}
+				});
+			}
+
+			// Store applications
+			applications.set(allApplications);
+			console.log("✅ Applications Loaded:", allApplications);
+			groupApplications("daily"); // Default to daily view
+		} catch (error) {
+			console.error("🔥 Error Fetching Applications:", error);
+		}
+	};
+
+	// 🔹 Group applications by daily, weekly, or monthly
+	const groupApplications = (view) => {
+		currentView.set(view);
+		let allApps = get(applications);
+
+		let grouped = [];
+		let dateMap = new Map();
+
+		allApps.forEach(({ submittedAt }) => {
+			let key;
+
+			if (view === "daily") {
+				key = submittedAt.toISOString().split("T")[0]; // YYYY-MM-DD
+			} else if (view === "weekly") {
+				let startOfWeek = new Date(submittedAt);
+				startOfWeek.setDate(submittedAt.getDate() - submittedAt.getDay()); // Get first day of week (Sunday)
+				key = startOfWeek.toISOString().split("T")[0];
+			} else if (view === "monthly") {
+				key = `${submittedAt.getFullYear()}-${(submittedAt.getMonth() + 1)
+					.toString()
+					.padStart(2, "0")}`;
+			}
+
+			dateMap.set(key, (dateMap.get(key) || 0) + 1);
+		});
+
+		grouped = Array.from(dateMap.entries()).map(([name, total]) => ({
+			name,
+			total,
+		}));
+
+		// Sort by date ascending
+		grouped.sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
+
+		// Paginate (Dashboard Mode: Only Show Latest 7 Entries)
+		let pageSize = isDashboard ? 7 : view === "daily" ? 30 : view === "weekly" ? 10 : 6;
+		groupedData.set(grouped.slice(get(currentIndex) * pageSize, (get(currentIndex) + 1) * pageSize));
+
+		console.log("📊 Grouped Data:", grouped);
+	};
+
+	// 🔹 Navigation (Next & Previous)
+	const nextPeriod = () => {
+		currentIndex.update((idx) => idx + 1);
+		groupApplications(get(currentView));
+	};
+
+	const prevPeriod = () => {
+		currentIndex.update((idx) => Math.max(idx - 1, 0));
+		groupApplications(get(currentView));
+	};
+
+	// 🔹 Chart Scales
 	$: xScale = scaleLinear()
-		.domain([0, xTicks.length])
+		.domain([0, get(groupedData).length])
 		.range([padding.left, width - padding.right]);
 
-	// 🔹 Y Scale: Maps value height
 	$: yScale = scaleLinear()
-		.domain([0, Math.max.apply(null, yTicks)])
+		.domain([0, Math.max(...get(groupedData).map((d) => d.total), 10)])
 		.range([height - padding.bottom, padding.top]);
 
 	$: innerWidth = width - (padding.left + padding.right);
-	$: barWidth = innerWidth / xTicks.length - 5; // 🔹 Increased space between bars
+	$: barWidth = innerWidth / get(groupedData).length - 5;
+
+	// 🔹 Load Data on Mount
+	onMount(fetchApplications);
 </script>
 
-<!-- 🔹 Scrollable container with hidden scrollbar -->
+<!-- 🔹 Controls (Hide in Dashboard Mode) -->
+{#if !isDashboard}
+	<div class="controls">
+		<button on:click={() => groupApplications("daily")}>Daily</button>
+		<button on:click={() => groupApplications("weekly")}>Weekly</button>
+		<button on:click={() => groupApplications("monthly")}>Monthly</button>
+	</div>
+
+	<!-- 🔹 Navigation -->
+	<div class="nav">
+		<button on:click={prevPeriod} disabled={$currentIndex === 0}>← Previous</button>
+		<span>Viewing {$currentView} data</span>
+		<button on:click={nextPeriod}>Next →</button>
+	</div>
+{/if}
+
+<!-- 🔹 Scrollable Chart Container -->
 <div class="chart-container">
 	<div class="chart">
 		<svg width={width} height={height}>
 			<!-- Y-Axis -->
 			<g class="axis y-axis">
-				{#each yTicks as tick}
+				{#each [0, Math.max(...$groupedData.map((d) => d.total), 10)] as tick}
 					<g transform="translate(0, {yScale(tick)})">
 						<text stroke="none" font-size="12" fill="#888888" text-anchor="end" x="40" y="-4">
 							<tspan>{tick}</tspan>
@@ -49,16 +151,9 @@
 
 			<!-- X-Axis -->
 			<g class="axis x-axis">
-				{#each data as point, i}
+				{#each $groupedData as point, i}
 					<g transform="translate({xScale(i)}, {height - padding.bottom})">
-						<text
-							stroke="none"
-							font-size="12"
-							fill="#888888"
-							text-anchor="middle"
-							x={barWidth / 2}
-							y="15"
-						>
+						<text stroke="none" font-size="12" fill="#888888" text-anchor="middle" x={barWidth / 2} y="15">
 							<tspan>{point.name}</tspan>
 						</text>
 					</g>
@@ -67,9 +162,8 @@
 
 			<!-- Bars -->
 			<g>
-				{#each data as point, i}
+				{#each $groupedData as point, i}
 					<rect
-						class="bg-primary-foreground"
 						x={xScale(i)}
 						y={yScale(point.total)}
 						width={barWidth}
@@ -85,32 +179,29 @@
 </div>
 
 <style>
+    .controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .nav {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
     .chart-container {
-        overflow-x: auto; /* 🔹 Enables horizontal scrolling */
+        overflow-x: auto;
         width: 100%;
         padding-bottom: 10px;
-
-        /* 🔹 Hides scrollbar for WebKit browsers */
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* Internet Explorer 10+ */
+        scrollbar-width: none;
+        -ms-overflow-style: none;
     }
-
     .chart-container::-webkit-scrollbar {
-        display: none; /* 🔹 Hides scrollbar for Chrome, Safari, and Edge */
+        display: none;
     }
-
     .chart {
         display: inline-block;
     }
-
-    svg {
-        position: relative;
-    }
-
-    rect {
-        max-width: 45px; /* 🔹 More space between bars */
-    }
-
     .axis text {
         font-size: 12px;
     }
