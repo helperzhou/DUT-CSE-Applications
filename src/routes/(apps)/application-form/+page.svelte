@@ -425,8 +425,7 @@
 	const requiredFields = {
 		0: ["fullName", "applicantGender", "applicantIDNumber", "applicantAge", "applicantAcademicQualification", "areYouDUTStudent"],
 		1: ["businessName", "natureOfBusiness", "businessDescription", "yearsOfTrading", "registrationNumber", "dateOfRegistration", "businessAddress", "postalCode"],
-		2: ["revenueFor2022", "revenueFor2023", "revenueFor2024", "revenueForMonth1","revenueForMonth2","revenueForMonth3","revenueForMonth4", "employeesFor2022", "employeesFor2023","employeesFor2024",
-			"employeesForMonth1","employeesForMonth2","employeesForMonth3","employeesForMonth4", "registeredWithSARS"],
+		2: ["revenueFor2022", "revenueFor2023", "revenueFor2024", "employeesFor2022", "employeesFor2023","employeesFor2024", "registeredWithSARS"],
 		3: ["motivation"],
 		4: ["documents"] // Ensure at least one document is uploaded
 	};
