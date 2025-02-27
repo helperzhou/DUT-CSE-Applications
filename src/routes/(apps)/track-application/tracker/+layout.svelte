@@ -1,8 +1,6 @@
 <script lang="ts">
 	import House from "lucide-svelte/icons/house";
-	import ChartLine from "lucide-svelte/icons/chart-line";
 	import Package from "lucide-svelte/icons/package";
-	import Settings from "lucide-svelte/icons/settings";
 	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
 	import { page } from "$app/stores";
 	import { cn } from '$lib/utils';
@@ -48,46 +46,6 @@
 				</a>
 			</Tooltip.Trigger>
 			<Tooltip.Content side="right">Programs</Tooltip.Content>
-		</Tooltip.Root>
-		<Tooltip.Root>
-			<Tooltip.Trigger asChild let:builder>
-				<a
-					href="##"
-					class={cn(
-		"hover:text-foreground flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8",
-		$page.url.pathname.startsWith("##")
-			? "bg-accent text-accent-foreground"
-			: "text-foreground/60"
-	)}
-					use:builder.action
-					{...builder}
-				>
-					<ChartLine class="h-5 w-5" />
-					<span class="sr-only">Analytics</span>
-				</a>
-			</Tooltip.Trigger>
-			<Tooltip.Content side="right">Analytics</Tooltip.Content>
-		</Tooltip.Root>
-	</nav>
-	<nav class="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
-		<Tooltip.Root>
-			<Tooltip.Trigger asChild let:builder>
-				<a
-					href="##"
-					class={cn(
-		"hover:text-foreground flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8",
-		$page.url.pathname.startsWith("##")
-			? "bg-accent text-accent-foreground"
-			: "text-foreground/60"
-	)}
-					use:builder.action
-					{...builder}
-				>
-					<Settings class="h-5 w-5" />
-					<span class="sr-only">Settings</span>
-				</a>
-			</Tooltip.Trigger>
-			<Tooltip.Content side="right">Settings</Tooltip.Content>
 		</Tooltip.Root>
 	</nav>
 </aside>
