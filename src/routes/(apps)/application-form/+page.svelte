@@ -37,6 +37,9 @@
 		registrationNumber: "",
 		dateOfRegistration: "",
 		businessAddress: "",
+businessAddressProvince: "",
+businessAddressCity:"",
+businessAddressLocation: "",
 		businessEmail: "",
 		socialMediaWebsiteAddress:"",
 		socialMediaInstagramAddress:"",
@@ -243,8 +246,17 @@
 
 	// Handle File Selection
 	const handleFileSelection = (event) => {
-		selectedFiles = event.target.files;
-	};
+    const file = event.target.files[0]; // Get the selected file
+    const fieldName = event.target.id; // Get the ID of the input field
+
+    if (file) {
+        formData.update((data) => {
+            const updatedDocuments = { ...data.documents, [fieldName]: file };
+            return { ...data, documents: updatedDocuments };
+        });
+    }
+};
+
 
 	// Function to Generate Application ID
 	const generateApplicationID = async (userId) => {
@@ -498,8 +510,29 @@
 		setTimeout(updateModalMessage, 2000); // Change message every 2 seconds
 	};
 
-	const submitForm = async () => {
+	const requiredDocuments = [
+    "cipc-upload",
+    "bbbbee-certificate",
+    "company-profile-upload",
+    "id-copy",
+    "bank-statement-upload"
+];
+
+const validateDocuments = () => {
+    const form = get(formData);
+    const missingDocs = requiredDocuments.filter(doc => !form.documents[doc]);
+
+    if (missingDocs.length > 0) {
+        alert(`❌ Please upload the following documents before submitting: ${missingDocs.join(", ")}`);
+        return false;
+    }
+    return true;
+};
+
+const submitForm = async () => {
     try {
+        if (!validateDocuments()) return; // 🔹 Stop if required documents are missing
+
         showModal.set(true); // Show loading modal
         updateModalMessage();
 
@@ -526,12 +559,13 @@
         let aiResponse = { aiRecommendation: "Pending", aiScore: 0, aiJustification: "" };
 
         // 🔥 **Pre-screening based on rejection criteria**
-        const address = form.businessAddress.toLowerCase();
+        const province = form.businessAddressProvince.toLowerCase().trim();
+        const city = form.businessAddressCity.toLowerCase().trim();
 
-        if (!address.includes("kzn")) {
-            aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Applicant's business is not located in KZN." };
-        } else if (!address.includes("durban")) {
-            aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Applicant's business is not in Durban or surrounding areas." };
+        if (province !== "kwazulu-natal" && province !== "kzn") {
+            aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Applicant's business is not located in KwaZulu-Natal." };
+        } else if (!["durban", "pietermaritzburg", "umhlanga", "ballito", "richards bay", "newcastle"].includes(city)) {
+            aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Applicant's business is not in Durban or nearby cities in KZN." };
         } else if (form.areYouDUTStudent === "Yes") {
             aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Current DUT students are referred to Innobiz." };
         } else if (form.registrationNumber) {
@@ -596,7 +630,6 @@
         showModal.set(false);
     }
 };
-
 	const fetchApplicationData = async (userId) => {
 		try {
 			const applicationsCollection = collection(db, `Users/${userId}/Applications`);
@@ -824,6 +857,39 @@
 							bind:value={$formData.businessAddress}
 							placeholder="Enter your business address"
 						/>
+<Label for="business-address-province">Business Address Province</Label>
+<Input
+	id="business-address-province"
+	bind:value={$formData.businessAddressProvince}
+	placeholder="Enter your business province"
+/>
+
+<Label for="business-address-city">Business Address City</Label>
+<Input
+	id="business-address-city"
+	bind:value={$formData.businessAddressCity}
+	placeholder="Enter your business city"
+/>
+<Label for="business-address-location">Business Address Location</Label>
+<Select.Root
+							selected={selectedBusinessAddressLocation}
+							onSelectedChange={(v) => {
+								if (v) {
+									$formData.businessAddressLocation = v.value;
+								}
+							}}
+						>
+							<Select.Trigger id="business-adress-location">
+								<Select.Value placeholder="Select Location" />
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Item value="Urban">Urban</Select.Item>
+								<Select.Item value="Township">Township</Select.Item>
+								<Select.Item value="Rural">Rural</Select.Item>
+							</Select.Content>
+						</Select.Root>
+						<input hidden bind:value={$formData.businessAddressLocation} name="businessAddressLocation" />
+
 						<Label for="business-name">Postal Code</Label>
 						<Input
 							id="business-name"
@@ -912,63 +978,49 @@
 						<Card.Content class="grid gap-6">
 							<!-- 🔹 Yearly Data (2022 - 2024) -->
 							{#each [2022, 2023, 2024] as year}
-								<div class="grid grid-cols-3 gap-4">
-									<Label for="revenue-{year}">Year: {year}</Label>
-									<Input
-    id="revenueForMonth1"
-    type="number"
-    bind:value={$formData.revenueForMonth1}
-    placeholder="Enter revenue for month 1"
-    on:input={(e) => formData.update(data => ({ ...data, revenueForMonth1: parseFloat(e.target.value) || 0 }))}
-    required
-/>
-<Input
-    id="employeesForMonth1"
-    type="number"
-    bind:value={$formData.employeesForMonth1}
-    placeholder="Enter employees for month 1"
-    on:input={(e) => formData.update(data => ({ ...data, employeesForMonth1: parseInt(e.target.value) || 0 }))}
-    required
-/>
-
-								</div>
-							{/each}
+	<div class="grid grid-cols-3 gap-4">
+		<Label for="revenueFor{year}">Revenue for {year}</Label>
+		<Input
+			id="revenueFor{year}"
+			type="number"
+			bind:value={$formData[`revenueFor${year}`]}
+			on:input={(e) => formData.update(data => ({ ...data, [`revenueFor${year}`]: parseFloat(e.target.value) || 0 }))}
+			placeholder="Enter revenue for {year}"
+		/>
+		<Label for="employeesFor{year}">Employees for {year}</Label>
+		<Input
+			id="employeesFor{year}"
+			type="number"
+			bind:value={$formData[`employeesFor${year}`]}
+			on:input={(e) => formData.update(data => ({ ...data, [`employeesFor${year}`]: parseInt(e.target.value) || 0 }))}
+			placeholder="Enter number of employees for {year}"
+		/>
+	</div>
+{/each}
 							<h3 class="text-lg font-medium">Enter your revenue and employees for the past four months</h3>
 							<!-- 🔹 Monthly Data -->
 							{#each [1, 2, 3, 4] as month}
-								<div class="grid grid-cols-3 gap-4">
-									<Select.Root
-										onSelectedChange={(v) => formData.update(data => ({ ...data, selectedMonth: v.value }))}
-									>
-										<Select.Trigger id="month">
-											<Select.Value placeholder="Select Month" />
-										</Select.Trigger>
-										<Select.Content>
-											{#each ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] as monthOption}
-												<Select.Item value={monthOption}>{monthOption}</Select.Item>
-											{/each}
-										</Select.Content>
-									</Select.Root>
+	<div class="grid grid-cols-3 gap-4">
+		<Label for="revenueForMonth{month}">Revenue for Month {month}</Label>
+		<Input
+			id="revenueForMonth{month}"
+			type="number"
+			bind:value={$formData[`revenueForMonth${month}`]}
+			on:input={(e) => formData.update(data => ({ ...data, [`revenueForMonth${month}`]: parseFloat(e.target.value) || 0 }))}
+			placeholder="Enter revenue for Month {month}"
+		/>
+		<Label for="employeesForMonth{month}">Employees for Month {month}</Label>
+		<Input
+			id="employeesForMonth{month}"
+			type="number"
+			bind:value={$formData[`employeesForMonth${month}`]}
+			on:input={(e) => formData.update(data => ({ ...data, [`employeesForMonth${month}`]: parseInt(e.target.value) || 0 }))}
+			placeholder="Enter number of employees for Month {month}"
+		/>
+	</div>
+{/each}
 
-									<Input
-										id="revenue-{month}"
-										bind:value={$formData[`revenueFor${month}`]}
-										placeholder="Enter revenue for month {month}"
-									/>
-									<Input
-										id="employees-{month}"
-										bind:value={$formData[`employeesFor${month}`]}
-										placeholder="Enter employees for {month}"
-									/>
-								</div>
-							{/each}
 						</Card.Content>
-<!--						<Label for="business-growth-rate">Business Growth Rate</Label>-->
-<!--						<Input-->
-<!--							id="business-growth-rate"-->
-<!--							bind:value={$formData.businessGrowthRate}-->
-<!--							placeholder="Enter your growth rate"-->
-<!--						/>-->
 						<Label for="sars-registration">Registered with SARS?</Label>
 
 						<Select.Root
@@ -1094,43 +1146,21 @@
 						>
 					</Card.Header>
 					<Card.Content class="grid gap-6">
-						<Label for="cipc-upload">Upload CIPC</Label>
-						<Input
-							id="cipc-upload"
-							type="file"
-							accept=".pdf,.doc,.docx,.jpg,.png"
-							on:change={handleFileSelection}
-						/>
-						<Label for="bbbbee-certificate">Upload BBBEE Certificate</Label>
-						<Input
-							id="bbbbee-certificate"
-							type="file"
-							accept=".pdf,.doc,.docx,.jpg,.png"
-							on:change={handleFileSelection}
-						/>
-						<Label for="company-profile-upload">Upload Company Profile</Label>
-						<Input
-							id="company-profile-upload"
-							type="file"
-							accept=".pdf,.doc,.docx,.jpg,.png"
-							on:change={handleFileSelection}
-						/>
-						<Label for="id-copy">Upload Certified Copy Of ID</Label>
-						<Input
-							id="id-copy"
-							type="file"
-							accept=".pdf,.doc,.docx,.jpg,.png"
-							on:change={handleFileSelection}
-						/>
-						<Label for="bank-statement-upload">Upload Business Bank Statement (last 3 months)
-						</Label>
-						<Input
-							id="bank-statement-upload"
-							type="file"
-							accept=".pdf,.doc,.docx,.jpg,.png"
-							on:change={handleFileSelection}
-						/>
-					</Card.Content>
+    {#each requiredDocuments as doc}
+        <Label for={doc}>{doc.replace("-", " ").toUpperCase()}</Label>
+        <Input
+            id={doc}
+            type="file"
+            accept=".pdf,.doc,.docx,.jpg,.png"
+            on:change={handleFileSelection}
+        />
+        {#if $formData.documents[doc]}
+            <p class="text-green-500">✅ {doc} uploaded</p>
+        {:else}
+            <p class="text-red-500">❌ {doc} not uploaded</p>
+        {/if}
+    {/each}
+</Card.Content>
 					<Card.Footer class="flex justify-between">
 						<Button variant="ghost" on:click={prevStep}>← Back</Button>
 						<Button on:click={submitForm} class="rounded bg-green-500 px-4 py-2 text-white">
