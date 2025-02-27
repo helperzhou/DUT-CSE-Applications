@@ -16,8 +16,9 @@
 <div class="hero-container" class:fade-out={$fadeOut}>
 	<div class="overlay">
 		<h1>Welcome to DUT CSE Rapid Incubation Program</h1>
-		<p>A fast service gateway to all Seda products and services.</p>
-		<p>Get the business support you need, fast.</p>
+<p>An innovation-driven gateway to entrepreneurial success.</p>
+<p>Accelerate your business growth with expert support and resources.</p>
+
 
 		<div class="form-container">
 			<div class="button-group">
