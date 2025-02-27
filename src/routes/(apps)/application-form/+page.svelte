@@ -50,20 +50,20 @@
 		businessGrowthRate: "",
 		postalCode: "",
 		lastFourMonthsTurnover: "",
-		revenueFor2022:"",
-		revenueFor2023:"",
-		revenueFor2024:"",
-		employeesFor2022:"",
-		employeesFor2023:"",
-		employeesFor2024:"",
-		revenueForMonth1:"",
-		revenueForMonth2:"",
-		revenueForMonth3:"",
-		revenueForMonth4:"",
-		employeesForMonth1:"",
-		employeesForMonth2:"",
-		employeesForMonth3:"",
-		employeesForMonth4:"",
+		revenueFor2022:0,
+		revenueFor2023:0,
+		revenueFor2024:0,
+		employeesFor2022:0,
+		employeesFor2023:0,
+		employeesFor2024:0,
+		revenueForMonth1:0,
+		revenueForMonth2:0,
+		revenueForMonth3:0,
+		revenueForMonth4:0,
+		employeesForMonth1:0,
+		employeesForMonth2:0,
+		employeesForMonth3:0,
+		employeesForMonth4:0,
 		whereDidYouHearAboutUs: "",
 		registeredWithSARS: "",
 		taxCompliance: "",
@@ -916,15 +916,22 @@
 								<div class="grid grid-cols-3 gap-4">
 									<Label for="revenue-{year}">Year: {year}</Label>
 									<Input
-										id="revenue-{year}"
-										bind:value={$formData[`revenueFor${year}`]}
-										placeholder="Enter revenue for {year}"
-									/>
-									<Input
-										id="employees-{year}"
-										bind:value={$formData[`employeesFor${year}`]}
-										placeholder="Enter employees for {year}"
-									/>
+    id="revenueForMonth1"
+    type="number"
+    bind:value={$formData.revenueForMonth1}
+    placeholder="Enter revenue for month 1"
+    on:input={(e) => formData.update(data => ({ ...data, revenueForMonth1: parseFloat(e.target.value) || 0 }))}
+    required
+/>
+<Input
+    id="employeesForMonth1"
+    type="number"
+    bind:value={$formData.employeesForMonth1}
+    placeholder="Enter employees for month 1"
+    on:input={(e) => formData.update(data => ({ ...data, employeesForMonth1: parseInt(e.target.value) || 0 }))}
+    required
+/>
+
 								</div>
 							{/each}
 							<h3 class="text-lg font-medium">Enter your revenue and employees for the past four months</h3>
