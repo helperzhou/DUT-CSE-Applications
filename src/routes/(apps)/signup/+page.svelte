@@ -63,7 +63,7 @@ const handleSignup = async () => {
         if (isAdmin) {
             goto("/dashboard");
         } else {
-            goto("/track-application");
+            goto("/track-application/tracker");
         }
 
     } catch (error) {
