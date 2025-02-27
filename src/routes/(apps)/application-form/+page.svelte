@@ -500,87 +500,103 @@
 	};
 
 	const submitForm = async () => {
-		try {
-			showModal.set(true); // Show modal
-			updateModalMessage(); // Start cycling through messages
+    try {
+        showModal.set(true); // Show loading modal
+        updateModalMessage();
 
-			const user = auth.currentUser;
-			if (!user) {
-				alert("User not logged in!");
-				showModal.set(false); // Hide modal on error
-				return;
-			}
+        const user = auth.currentUser;
+        if (!user) {
+            alert("User not logged in!");
+            showModal.set(false);
+            return;
+        }
 
-			if (get(currentStep) === 4 && get(formData).documents.length === 0) {
-				alert("❌ Please upload at least one document before submitting.");
-				return;
-			}
+        const userId = await getUserIdByEmail(user.email);
+        if (!userId) {
+            alert("User not found in Firestore!");
+            showModal.set(false);
+            return;
+        }
 
-			const userId = await getUserIdByEmail(user.email);
-			if (!userId) {
-				alert("User not found in Firestore!");
-				showModal.set(false);
-				return;
-			}
+        // 🔹 Generate Application ID
+        const applicationID = await generateApplicationID(userId);
 
-			// 🔹 Generate Application ID
-			const applicationID = await generateApplicationID(userId);
+        // Extract form data
+        const form = get(formData);
+        const currentYear = new Date().getFullYear();
+        let aiResponse = { aiRecommendation: "Pending", aiScore: 0, aiJustification: "" };
 
-			// 🔹 Format Data for AI Submission
-			const applicationData = {
-				company_name: $formData.businessName,
-				company_registration_no: $formData.registrationNumber,
-				no_of_years_trading: parseInt($formData.yearsOfTrading || "0"),
-				sector: $formData.natureOfBusiness,
-				current_number_of_employees: parseInt($formData.employees || "0"),
-				current_business_turnover: parseInt($formData.annualTurnover || "0"),
-				business_description: $formData.businessDescription,
-				tax_clearance: $formData.taxCompliance,
-				initial_support: $formData.motivation,
-			};
+        // 🔥 **Pre-screening based on rejection criteria**
+        const address = form.businessAddress.toLowerCase();
 
-			// 🔹 Send Data to AI Scoring API
-			const aiResponse = await submitToAI(applicationData);
+        if (!address.includes("kzn")) {
+            aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Applicant's business is not located in KZN." };
+        } else if (!address.includes("durban")) {
+            aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Applicant's business is not in Durban or surrounding areas." };
+        } else if (form.areYouDUTStudent === "Yes") {
+            aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Current DUT students are referred to Innobiz." };
+        } else if (form.registrationNumber) {
+            const companyYear = parseInt(form.registrationNumber.split("/")[0]); // Extract YYYY from "YYYY/NNNNNN/06"
+            if (currentYear - companyYear > 5) {
+                aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Company registration is older than 5 years." };
+            }
+        } else if (form.taxCompliance !== "Yes") {
+            aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Company does not meet compliance requirements." };
+        }
 
-			if (!aiResponse) {
-				// alert("Failed to retrieve AI scoring. Please try again.");
-				showModal.set(false);
-				return;
-			}
+        // If rejected, save the application immediately
+        if (aiResponse.aiRecommendation === "Rejected") {
+            const applicationsCollection = collection(db, `Users/${userId}/Applications`);
+            await addDoc(applicationsCollection, {
+                applicationID,
+                ...form,
+                submittedAt: new Date(),
+                aiRecommendation: aiResponse.aiRecommendation,
+                aiScore: aiResponse.aiScore,
+                aiJustification: aiResponse.aiJustification,
+            });
 
-			// 🔹 Reference to Applications Collection
-			const applicationsCollection = collection(db, `Users/${userId}/Applications`);
-			let uploadedFiles = [];
+            showModal.set(false);
+            alert(`Application Rejected: ${aiResponse.aiJustification}`);
+            return;
+        }
 
-			// 🔹 Upload Documents to Firebase Storage
-			for (let file of selectedFiles) {
-				const storageRef = ref(storage, `application_files/${userId}/${file.name}`);
-				const snapshot = await uploadBytes(storageRef, file);
-				const downloadURL = await getDownloadURL(snapshot.ref);
-				uploadedFiles.push(downloadURL);
-			}
+        // **Proceed with AI API Call if not rejected**
+        const applicationData = {
+            company_name: form.businessName,
+            company_registration_no: form.registrationNumber,
+            no_of_years_trading: parseInt(form.yearsOfTrading || "0"),
+            sector: form.natureOfBusiness,
+            current_number_of_employees: parseInt(form.employeesFor2024 || "0"),
+            current_business_turnover: parseInt(form.revenueFor2024 || "0"),
+            business_description: form.businessDescription,
+            tax_clearance: form.taxCompliance,
+            initial_support: form.motivation,
+        };
 
-			// 🔹 Save Data to Firestore (Including AI Scoring)
-			await addDoc(applicationsCollection, {
-				applicationID,
-				...$formData,
-				documents: uploadedFiles,
-				submittedAt: new Date(),
-				aiRecommendation: aiResponse.aiRecommendation,
-				aiScore: aiResponse.aiScore,
-				aiJustification: aiResponse.aiJustification,
-			});
+        // Send to AI
+        aiResponse = await submitToAI(applicationData);
 
-			// alert(`✅ Application Submitted Successfully! AI Score: ${aiResponse.aiScore}`);
-			showModal.set(false); // Hide modal after submission
-			goto('/track-application/tracker');
+        // Save Application with AI Response
+        const applicationsCollection = collection(db, `Users/${userId}/Applications`);
+        await addDoc(applicationsCollection, {
+            applicationID,
+            ...form,
+            submittedAt: new Date(),
+            aiRecommendation: aiResponse.aiRecommendation,
+            aiScore: aiResponse.aiScore,
+            aiJustification: aiResponse.aiJustification,
+        });
 
-		} catch (error) {
-			console.error("🔥 Firestore Error:", error);
-			alert("Error submitting application. Please try again.");
-			showModal.set(false);
-		}
-	};
+        showModal.set(false);
+        goto('/track-application/tracker');
+
+    } catch (error) {
+        console.error("🔥 Firestore Error:", error);
+        alert("Error submitting application. Please try again.");
+        showModal.set(false);
+    }
+};
 
 	const fetchApplicationData = async (userId) => {
 		try {
