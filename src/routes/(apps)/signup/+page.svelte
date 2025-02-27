@@ -36,9 +36,12 @@
     "snelisiweh@dut.ac.za"
 ];
 
+const showSuccessModal = writable(false); // Controls success modal visibility
+
 const handleSignup = async () => {
     isLoading.set(true);
     errorMessage.set("");
+    showSuccessModal.set(false); // Ensure modal is hidden before process starts
 
     try {
         // ✅ Create User in Firebase Authentication
@@ -59,12 +62,16 @@ const handleSignup = async () => {
 
         console.log(`✅ User registered successfully: ${user.email} | Role: ${isAdmin ? "Admin" : "User"}`);
 
-        // ✅ Redirect based on user role
-        if (isAdmin) {
-            goto("/dashboard");
-        } else {
-            goto("/track-application/tracker");
-        }
+        // ✅ Show success modal before navigating
+        showSuccessModal.set(true);
+
+        setTimeout(() => {
+            if (isAdmin) {
+                goto("/dashboard");
+            } else {
+                goto("/track-application/tracker");
+            }
+        }, 2000); // 2-second delay before redirect
 
     } catch (error) {
         console.error("🔥 Firebase Auth Error:", error);
@@ -74,6 +81,16 @@ const handleSignup = async () => {
     }
 };
 </script>
+
+{#if $showSuccessModal}
+	<div class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-50">
+		<div class="bg-white p-6 rounded-lg shadow-lg text-center">
+			<h2 class="text-lg font-semibold text-green-600">✅ Registration Successful!</h2>
+			<p class="text-gray-700">You will be redirected shortly...</p>
+			<Icons.spinner class="mt-3 h-6 w-6 animate-spin text-green-500" />
+		</div>
+	</div>
+{/if}
 
 <div class="container relative hidden h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0" transition:slide="{{ x: isSliding ? -500 : 0 }}">
 	<!-- 🔹 LEFT SIDE: Background Image & Text -->
@@ -110,11 +127,11 @@ const handleSignup = async () => {
 				<div class="grid grid-cols-2 gap-4">
 					<div class="grid gap-2">
 						<Label for="first-name">First name</Label>
-						<Input id="first-name" bind:value={firstName} placeholder="Max" required />
+						<Input id="first-name" bind:value={firstName} placeholder="John" required />
 					</div>
 					<div class="grid gap-2">
 						<Label for="last-name">Last name</Label>
-						<Input id="last-name" bind:value={lastName} placeholder="Robinson" required />
+						<Input id="last-name" bind:value={lastName} placeholder="Doe" required />
 					</div>
 				</div>
 				<div class="grid gap-2">
