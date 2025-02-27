@@ -63,55 +63,69 @@
 
 	// ✅ Fetch User Applications
 	async function fetchUserApplications(userId) {
-		try {
-			console.log("📌 Fetching applications for user ID:", userId);
-			const applicationsRef = collection(db, `Users/${userId}/Applications`);
-			const querySnapshot = await getDocs(applicationsRef);
-			let applications = querySnapshot.docs.map(doc => doc.data());
-			console.log("✅ User applications fetched:", applications);
-			return applications;
-		} catch (error) {
-			console.error("🔥 Error fetching user applications:", error);
-			return [];
-		}
-	}
+    try {
+        const applicationsRef = collection(db, `Users/${userId}/Applications`);
+        const querySnapshot = await getDocs(applicationsRef);
+        const now = new Date();
+        
+        let applications = querySnapshot.docs.map(doc => {
+            let appData = doc.data();
+            let submittedAt = appData.submittedAt?.toDate(); // Convert Firestore timestamp to Date object
+            
+            if (submittedAt) {
+                const timeDiff = (now - submittedAt) / (1000 * 60 * 60); // Difference in hours
+                if (timeDiff <= 48) {
+                    appData.status = "Under Review"; // Set status if within 48 hours
+                }
+            }
+            return appData;
+        });
+
+        return applications;
+    } catch (error) {
+        console.error("🔥 Error fetching user applications:", error);
+        return [];
+    }
+}
+
 
 	// ✅ Fetch Programs & Cross-Reference Applications
 	async function fetchPrograms() {
-		try {
-			console.log("📌 Fetching programs...");
-			const programsRef = collection(db, "Programs");
-			const querySnapshot = await getDocs(programsRef);
-			let fetchedPrograms = querySnapshot.docs.map(doc => ({
-				...doc.data(),
-				id: doc.id,
-				status: "Not Applied",
-			}));
+    try {
+        console.log("📌 Fetching programs...");
+        const programsRef = collection(db, "Programs");
+        const querySnapshot = await getDocs(programsRef);
+        let fetchedPrograms = querySnapshot.docs.map(doc => ({
+            ...doc.data(),
+            id: doc.id,
+            status: "Not Applied",
+        }));
 
-			console.log("✅ Programs fetched:", fetchedPrograms);
+        console.log("✅ Programs fetched:", fetchedPrograms);
 
-			const user = auth.currentUser;
-			if (user) {
-				const userId = await getUserIdByEmail(user.email);
-				if (userId) {
-					const userApplications = await fetchUserApplications(userId);
+        const user = auth.currentUser;
+        if (user) {
+            const userId = await getUserIdByEmail(user.email);
+            if (userId) {
+                const userApplications = await fetchUserApplications(userId);
 
-					fetchedPrograms = fetchedPrograms.map(program => {
-						const appliedProgram = userApplications.find(app => app.programID === program.programID);
-						return {
-							...program,
-							status: appliedProgram ? appliedProgram.applicationStatus : "Not Applied",
-						};
-					});
-				}
-			}
+                fetchedPrograms = fetchedPrograms.map(program => {
+                    const appliedProgram = userApplications.find(app => app.programID === program.programID);
+                    return {
+                        ...program,
+                        status: appliedProgram ? appliedProgram.status : "Not Applied", // Updated status
+                    };
+                });
+            }
+        }
 
-			programs.set(fetchedPrograms);
-			filterPrograms();
-		} catch (error) {
-			console.error("🔥 Error fetching programs:", error);
-		}
-	}
+        programs.set(fetchedPrograms);
+        filterPrograms();
+    } catch (error) {
+        console.error("🔥 Error fetching programs:", error);
+    }
+}
+
 
 	// ✅ Apply Filters
 	function filterPrograms() {
