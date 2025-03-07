@@ -246,6 +246,14 @@ let customSector = writable("");
       customSector.set(event.target.value);
     }
   }
+// Function to update employee fields ensuring the value is at least 1
+  function updateEmployeeField(year: number, event: Event) {
+    const value = parseInt((event.target as HTMLInputElement).value, 10);
+    formData.update(data => ({
+      ...data,
+      [`employeesFor${year}`]: value < 1 ? 1 : value
+    }));
+  }
 	// Calculate Business Growth Rate
 	$: formData.update(data => {
 		if (data.revenueFor2022 && data.revenueFor2023) {
@@ -1037,13 +1045,7 @@ const submitForm = async () => {
 			type="number"
 			bind:value={$formData[`employeesFor${year}`]}
 			 min="1"
-      on:input={(e) => {
-        const value = parseInt(e.target.value);
-        formData.update(data => ({
-          ...data,
-          [`employeesFor${year}`]: value < 1 ? 1 : value
-        }));
-      }}${year}`]: parseInt(e.target.value) || 0 }))}
+      			on:input={e => updateEmployeeField(year, e)}
 			placeholder="Enter number of employees for {year}"
 		/>
 	</div>
@@ -1065,14 +1067,8 @@ const submitForm = async () => {
 			id="employeesForMonth{month}"
 			type="number"
 			bind:value={$formData[`employeesForMonth${month}`]}
-			min="1"
-      on:input={(e) => {
-        const value = parseInt(e.target.value);
-        formData.update(data => ({
-          ...data,
-          [`employeesForMonth${month}`]: value < 1 ? 1 : value
-        }));
-      }}
+			  min="1"
+      			on:input={e => updateEmployeeField("Month" + month, e)}
 			placeholder="Enter number of employees for Month {month}"
 		/>
 	</div>
