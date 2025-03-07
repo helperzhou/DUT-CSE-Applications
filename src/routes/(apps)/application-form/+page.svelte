@@ -97,7 +97,7 @@ businessAddressLocation: "",
 	const minWordCount = {
 		businessDescription: 200,
 		motivation: 200,
-		challenges: 200,
+		otherSector: 5,
 	};
 
 
@@ -224,6 +224,13 @@ businessAddressLocation: "",
 			value: $formData.areYouDUTStudent
 		}
 		: undefined;
+	$: selectedSetor = $formData.natureOfBusiness
+		? {
+			label: $formData.natureOfBusiness,
+			value: $formData.natureOfBusiness
+		}
+		: undefined;
+
 
 	$: selectedRegisteredWithSARS = $formData.registeredWithSARS
 		? {
@@ -231,6 +238,14 @@ businessAddressLocation: "",
 			value: $formData.registeredWithSARS
 		}
 		: undefined;
+let customSector = writable("");
+
+  function handleCustomSectorChange(event) {
+    let words = event.target.value.split(/\s+/);
+    if (words.length <= 5) {
+      customSector.set(event.target.value);
+    }
+  }
 	// Calculate Business Growth Rate
 	$: formData.update(data => {
 		if (data.revenueFor2022 && data.revenueFor2023) {
@@ -564,8 +579,6 @@ const submitForm = async () => {
 
         if (province !== "kwazulu-natal" && province !== "kzn") {
             aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Applicant's business is not located in KwaZulu-Natal." };
-        } else if (!["durban", "pietermaritzburg", "umhlanga", "ballito", "richards bay", "newcastle"].includes(city)) {
-            aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Applicant's business is not in Durban or nearby cities in KZN." };
         } else if (form.areYouDUTStudent === "Yes") {
             aiResponse = { aiRecommendation: "Rejected", aiScore: 0, aiJustification: "Current DUT students are referred to Innobiz." };
         } else if (form.registrationNumber) {
@@ -816,12 +829,43 @@ const submitForm = async () => {
 							bind:value={$formData.businessName}
 							placeholder="Enter your business name"
 						/>
-						<Label for="nature-business">Nature of Business</Label>
-						<Input
-							id="nature-business"
-							bind:value={$formData.natureOfBusiness}
-							placeholder="Industry/Type of Services"
-						/>
+						<Label for="nature-of-business">Select Nature Of Business</Label>
+						<Select.Root
+							selected={selectedSector}
+							onSelectedChange={(v) => {
+								if (v) {
+									$formData.natureOfBusiness = v.value;
+								}
+							}}
+						>
+							<Select.Trigger id="nature-of-business">
+  						<Select.Value placeholder="Select Nature Of Business" />
+						</Select.Trigger>
+						<Select.Content>
+						  <Select.Item value="mining-quarrying">Mining and Quarrying</Select.Item>
+						  <Select.Item value="finance-real-estate-business">Finance, Real Estate and Business Services</Select.Item>
+						  <Select.Item value="manufacturing">Manufacturing</Select.Item>
+						  <Select.Item value="trade-wholesale-retail">Trade (Wholesale and Retail)</Select.Item>
+						  <Select.Item value="agriculture-forestry-fishing">Agriculture, Forestry and Fishing</Select.Item>
+						  <Select.Item value="transport-storage-communication">Transport, Storage and Communication</Select.Item>
+						  <Select.Item value="construction">Construction</Select.Item>
+						  <Select.Item value="government-services">Government Services</Select.Item>
+						  <Select.Item value="electricity-gas-water">Electricity, Gas and Water Supply</Select.Item>
+						  <Select.Item value="tourism-hospitality">Tourism and Hospitality</Select.Item>
+						  <Select.Item value="community-personal-services">Community and Personal Services</Select.Item>
+						<Select.Item value="other">Other (Specify Below)</Select.Item>
+        </Select.Content>
+
+						</Select.Root>
+{#if $selectedSector === "other"}
+    <input
+      type="text"
+      placeholder="Enter your business sector (max 5 words)"
+      bind:value={$customSector}
+      on:input={handleCustomSectorChange}
+      class="border p-2 mt-2 w-full"
+    />
+  {/if}
 						<Label for="business-description">Briefly describe your business (Min: 200 words)</Label>
 						<Textarea
 							id="business-description"
@@ -992,7 +1036,14 @@ const submitForm = async () => {
 			id="employeesFor{year}"
 			type="number"
 			bind:value={$formData[`employeesFor${year}`]}
-			on:input={(e) => formData.update(data => ({ ...data, [`employeesFor${year}`]: parseInt(e.target.value) || 0 }))}
+			 min="1"
+      on:input={(e) => {
+        const value = parseInt(e.target.value);
+        formData.update(data => ({
+          ...data,
+          [`employeesFor${year}`]: value < 1 ? 1 : value
+        }));
+      }}${year}`]: parseInt(e.target.value) || 0 }))}
 			placeholder="Enter number of employees for {year}"
 		/>
 	</div>
@@ -1014,7 +1065,14 @@ const submitForm = async () => {
 			id="employeesForMonth{month}"
 			type="number"
 			bind:value={$formData[`employeesForMonth${month}`]}
-			on:input={(e) => formData.update(data => ({ ...data, [`employeesForMonth${month}`]: parseInt(e.target.value) || 0 }))}
+			min="1"
+      on:input={(e) => {
+        const value = parseInt(e.target.value);
+        formData.update(data => ({
+          ...data,
+          [`employeesForMonth${month}`]: value < 1 ? 1 : value
+        }));
+      }}
 			placeholder="Enter number of employees for Month {month}"
 		/>
 	</div>
