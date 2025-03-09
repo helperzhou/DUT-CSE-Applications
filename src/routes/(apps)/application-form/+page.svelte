@@ -37,9 +37,9 @@
 		registrationNumber: "",
 		dateOfRegistration: "",
 		businessAddress: "",
-businessAddressProvince: "",
-businessAddressCity:"",
-businessAddressLocation: "",
+		businessAddressProvince: "",
+		businessAddressCity:"",
+		businessAddressLocation: "",
 		businessEmail: "",
 		socialMediaWebsiteAddress:"",
 		socialMediaInstagramAddress:"",
@@ -230,8 +230,6 @@ businessAddressLocation: "",
 			value: $formData.natureOfBusiness
 		}
 		: undefined;
-
-
 	$: selectedRegisteredWithSARS = $formData.registeredWithSARS
 		? {
 			label: $formData.registeredWithSARS,
